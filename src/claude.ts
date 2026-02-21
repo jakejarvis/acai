@@ -1,11 +1,18 @@
-import { run } from "./shell";
+import { spawn } from "node:child_process";
 
 /**
  * Check that `claude` CLI is installed and accessible.
  */
 export async function ensureClaude(): Promise<void> {
-  const result = await run(["claude", "--version"]);
-  if (result === null) {
+  const ok = await new Promise<boolean>((resolve) => {
+    const proc = spawn("claude", ["--version"], {
+      stdio: ["ignore", "ignore", "ignore"],
+    });
+    proc.on("error", () => resolve(false));
+    proc.on("close", (code) => resolve(code === 0));
+  });
+
+  if (!ok) {
     throw new Error(
       [
         "Claude Code not found. Install it using:",
@@ -40,27 +47,38 @@ export async function generateCommitMessage(
   const systemPrompt = buildSystemPrompt(commitLog, instructions);
   const userPrompt = buildUserPrompt(diff, stat, files);
 
-  const proc = Bun.spawn(
-    [
+  const { stdout, stderr, code } = await new Promise<{
+    stdout: string;
+    stderr: string;
+    code: number | null;
+  }>((resolve, reject) => {
+    const proc = spawn(
       "claude",
-      "-p",
-      userPrompt,
-      "--output-format",
-      "json",
-      "--model",
-      model,
-      "--system-prompt",
-      systemPrompt,
-    ],
-    {
-      stdout: "pipe",
-      stderr: "pipe",
-    }
-  );
+      [
+        "-p",
+        userPrompt,
+        "--output-format",
+        "json",
+        "--model",
+        model,
+        "--no-session-persistence",
+        "--system-prompt",
+        systemPrompt,
+      ],
+      { stdio: ["ignore", "pipe", "pipe"] }
+    );
 
-  const stdout = await new Response(proc.stdout).text();
-  const stderr = await new Response(proc.stderr).text();
-  const code = await proc.exited;
+    let stdout = "";
+    let stderr = "";
+    proc.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk;
+    });
+    proc.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk;
+    });
+    proc.on("error", reject);
+    proc.on("close", (code) => resolve({ stdout, stderr, code }));
+  });
 
   if (code !== 0) {
     throw new Error(

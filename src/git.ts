@@ -1,3 +1,5 @@
+import { writeFileSync, unlinkSync } from "node:fs";
+import { spawn } from "node:child_process";
 import { run, runOrThrow } from "./shell";
 
 export async function ensureGitRepo() {
@@ -86,19 +88,20 @@ export async function getRecentCommitLog(count = 10): Promise<string | null> {
  */
 export async function commit(message: string): Promise<void> {
   const tmpPath = `/tmp/git-commit-ai-${Date.now()}.txt`;
-  await Bun.write(tmpPath, message);
+  writeFileSync(tmpPath, message, "utf-8");
 
   try {
-    const proc = Bun.spawn(["git", "commit", "-F", tmpPath], {
-      stdout: "inherit",
-      stderr: "inherit",
+    const code = await new Promise<number | null>((resolve, reject) => {
+      const proc = spawn("git", ["commit", "-F", tmpPath], {
+        stdio: "inherit",
+      });
+      proc.on("error", reject);
+      proc.on("close", resolve);
     });
-    const code = await proc.exited;
     if (code !== 0) throw new Error("git commit failed");
   } finally {
     try {
-      const { unlink } = await import("node:fs/promises");
-      await unlink(tmpPath);
+      unlinkSync(tmpPath);
     } catch {}
   }
 }

@@ -1,4 +1,4 @@
-import { parseArgs, ParseArgsOptionsConfig } from "node:util";
+import { parseArgs, type ParseArgsOptionsConfig } from "node:util";
 
 /**
  * Resolved configuration for the CLI.
@@ -24,8 +24,8 @@ export function parseConfig(): Config {
   });
 
   return {
-    model: values.model ?? process.env.GIT_COMMIT_AI_MODEL ?? DEFAULT_MODEL,
-    help: values.help ?? false,
+    model: (values.model as string | undefined) ?? process.env.GIT_COMMIT_AI_MODEL ?? DEFAULT_MODEL,
+    help: (values.help as boolean | undefined) ?? false,
   };
 }
 

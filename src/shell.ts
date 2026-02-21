@@ -1,3 +1,5 @@
+import { spawn } from "node:child_process";
+
 /**
  * Run a command and return its stdout as a string.
  * Returns null if the command fails.
@@ -6,19 +8,21 @@ export async function run(
   cmd: string[],
   opts?: { cwd?: string }
 ): Promise<string | null> {
-  try {
-    const proc = Bun.spawn(cmd, {
-      stdout: "pipe",
-      stderr: "pipe",
+  const [bin, ...args] = cmd;
+  return new Promise((resolve) => {
+    const proc = spawn(bin, args, {
       cwd: opts?.cwd,
+      stdio: ["ignore", "pipe", "pipe"],
     });
-    const text = await new Response(proc.stdout).text();
-    const code = await proc.exited;
-    if (code !== 0) return null;
-    return text.trim();
-  } catch {
-    return null;
-  }
+    let stdout = "";
+    proc.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk;
+    });
+    proc.on("error", () => resolve(null));
+    proc.on("close", (code) => {
+      resolve(code === 0 ? stdout.trim() : null);
+    });
+  });
 }
 
 /**

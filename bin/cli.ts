@@ -1,7 +1,7 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 
 import * as p from "@clack/prompts";
-import { ensureGitRepo, getStagedDiff, getStagedStat, getStagedFiles, getUnstagedFiles, stageAll, stageFiles, getRecentCommitLog, commit } from "../src/git";
+import { ensureGitRepo, getStagedDiff, getStagedStat, getStagedFiles, getUnstagedFiles, stageAll, stageFiles, getRecentCommitLog, commit, type UnstagedFile } from "../src/git";
 import { ensureClaude, generateCommitMessage } from "../src/claude";
 import { parseConfig, printUsage } from "../src/args";
 
@@ -55,31 +55,11 @@ async function main() {
     if (shouldStage) {
       await stageAll();
     } else {
-      // Group files by status for selection
-      const groups: Record<string, { value: string; label: string }[]> = {};
-      const labels: Record<string, string> = {
-        modified: "Modified",
-        untracked: "Untracked",
-        deleted: "Deleted",
-      };
-
-      for (const file of unstaged) {
-        const group = labels[file.status];
-        groups[group] ??= [];
-        groups[group].push({ value: file.path, label: file.path });
-      }
-
-      const selected = await p.groupMultiselect({
-        message: "Select files to stage",
-        options: groups,
-      });
-
-      if (p.isCancel(selected) || selected.length === 0) {
+      const picked = await promptFilePicker(unstaged, "Select files to stage");
+      if (!picked) {
         p.cancel("Nothing staged.");
         process.exit(0);
       }
-
-      await stageFiles(selected as string[]);
     }
 
     diff = await getStagedDiff();
@@ -87,6 +67,27 @@ async function main() {
     if (!diff) {
       p.cancel("Still no diff after staging. Nothing to commit.");
       process.exit(0);
+    }
+  }
+
+  // ── Offer to stage additional unstaged files ────────────────────────
+  const remaining = await getUnstagedFiles();
+  if (remaining.length > 0) {
+    const addMore = await p.confirm({
+      message: `${remaining.length} other changed file${remaining.length === 1 ? "" : "s"} not staged. Add more?`,
+      initialValue: false,
+    });
+
+    if (p.isCancel(addMore)) {
+      p.cancel("Aborted.");
+      process.exit(0);
+    }
+
+    if (addMore) {
+      await promptFilePicker(remaining, "Select additional files to stage");
+
+      // Re-fetch diff since staging changed
+      diff = (await getStagedDiff())!;
     }
   }
 
@@ -184,6 +185,36 @@ async function main() {
   }
 }
 
+/**
+ * Show a grouped multi-select file picker and stage the selected files.
+ * Returns true if files were staged, false if cancelled/empty.
+ */
+async function promptFilePicker(
+  files: UnstagedFile[],
+  message: string
+): Promise<boolean> {
+  const STATUS_LABELS: Record<string, string> = {
+    modified: "Modified",
+    untracked: "Untracked",
+    deleted: "Deleted",
+  };
+
+  const groups: Record<string, { value: string; label: string }[]> = {};
+
+  for (const file of files) {
+    const group = STATUS_LABELS[file.status];
+    groups[group] ??= [];
+    groups[group].push({ value: file.path, label: file.path });
+  }
+
+  const selected = await p.groupMultiselect({ message, options: groups });
+
+  if (p.isCancel(selected) || selected.length === 0) return false;
+
+  await stageFiles(selected as string[]);
+  return true;
+}
+
 async function doCommit(message: string) {
   const s = p.spinner();
   s.start("Committing");
@@ -211,6 +242,7 @@ function formatMessageForDisplay(message: string): string {
 }
 
 async function editInEditor(message: string): Promise<string | null> {
+  const { spawn } = await import("node:child_process");
   const { writeFileSync, readFileSync, unlinkSync } = await import("node:fs");
   const editor = process.env.EDITOR || process.env.VISUAL || "vi";
   const tmpPath = `/tmp/git-commit-ai-edit-${Date.now()}.txt`;
@@ -218,12 +250,12 @@ async function editInEditor(message: string): Promise<string | null> {
   writeFileSync(tmpPath, message, "utf-8");
 
   try {
-    const proc = Bun.spawn([editor, tmpPath], {
-      stdin: "inherit",
-      stdout: "inherit",
-      stderr: "inherit",
+    const code = await new Promise<number | null>((resolve, reject) => {
+      const proc = spawn(editor, [tmpPath], { stdio: "inherit" });
+      proc.on("error", reject);
+      proc.on("close", resolve);
     });
-    await proc.exited;
+    if (code !== 0) return null;
     return readFileSync(tmpPath, "utf-8");
   } finally {
     try { unlinkSync(tmpPath); } catch {}
@@ -231,6 +263,8 @@ async function editInEditor(message: string): Promise<string | null> {
 }
 
 async function copyToClipboard(text: string): Promise<void> {
+  const { spawn } = await import("node:child_process");
+
   // Try common clipboard commands
   const cmds = [
     ["pbcopy"],            // macOS
@@ -239,16 +273,15 @@ async function copyToClipboard(text: string): Promise<void> {
     ["wl-copy"],           // Wayland
   ];
 
-  for (const cmd of cmds) {
-    try {
-      const proc = Bun.spawn(cmd, { stdin: "pipe" });
+  for (const [bin, ...args] of cmds) {
+    const ok = await new Promise<boolean>((resolve) => {
+      const proc = spawn(bin, args, { stdio: ["pipe", "ignore", "ignore"] });
+      proc.on("error", () => resolve(false));
       proc.stdin.write(text);
       proc.stdin.end();
-      const code = await proc.exited;
-      if (code === 0) return;
-    } catch {
-      continue;
-    }
+      proc.on("close", (code) => resolve(code === 0));
+    });
+    if (ok) return;
   }
 
   // Fallback: just print it
