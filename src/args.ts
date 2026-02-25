@@ -24,23 +24,23 @@ export function parseConfig(): Config {
   });
 
   return {
-    model: (values.model as string | undefined) ?? process.env.GIT_COMMIT_AI_MODEL ?? DEFAULT_MODEL,
+    model: (values.model as string | undefined) ?? process.env.ACAI_MODEL ?? DEFAULT_MODEL,
     help: (values.help as boolean | undefined) ?? false,
   };
 }
 
 export function printUsage(): void {
   console.log(`
-Usage: git-commit-ai [options]
+Usage: acai [options]
 
 Options:
   -m, --model <model>  Claude model to use (default: ${DEFAULT_MODEL})
-                        Can also set GIT_COMMIT_AI_MODEL env var
+                        Can also set ACAI_MODEL env var
   -h, --help           Show this help message
 
 Examples:
-  git-commit-ai                  # use default model (${DEFAULT_MODEL})
-  git-commit-ai --model haiku    # use haiku for speed
-  git-commit-ai -m opus          # use opus for max quality
+  acai                  # use default model (${DEFAULT_MODEL})
+  acai --model haiku    # use haiku for speed
+  acai -m opus          # use opus for max quality
 `.trimStart());
 }

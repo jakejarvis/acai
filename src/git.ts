@@ -87,7 +87,7 @@ export async function getRecentCommitLog(count = 10): Promise<string | null> {
  * Commit using a temp file (avoids shell escaping nightmares).
  */
 export async function commit(message: string): Promise<void> {
-  const tmpPath = `/tmp/git-commit-ai-${Date.now()}.txt`;
+  const tmpPath = `/tmp/acai-${Date.now()}.txt`;
   writeFileSync(tmpPath, message, "utf-8");
 
   try {

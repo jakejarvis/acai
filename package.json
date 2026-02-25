@@ -1,11 +1,11 @@
 {
-  "name": "git-commit-ai",
+  "name": "acai",
   "version": "1.0.0",
   "description": "Yet another AI commit message generator",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "git-commit-ai": "./dist/cli.mjs"
+    "acai": "./dist/cli.mjs"
   },
   "scripts": {
     "build": "tsdown bin/cli.ts --minify"
@@ -14,10 +14,8 @@
     "dist/",
     "README.md"
   ],
-  "dependencies": {
-    "@clack/prompts": "^1.0.1"
-  },
   "devDependencies": {
+    "@clack/prompts": "^1.0.1",
     "@types/node": "^25.3.0",
     "tsdown": "^0.20.3",
     "typescript": "^5.9.3"

@@ -1,8 +1,8 @@
-# git-commit-ai
+# acai
 
 AI-generated commit messages that **match your repo's existing style** — powered by [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
 
-Unlike other AI commit tools that impose a fixed format, `git-commit-ai` reads your repo's recent commit history and tells Claude to match whatever conventions your team already uses — conventional commits, gitmoji, ticket prefixes, freeform, whatever.
+Unlike other AI commit tools that impose a fixed format, `acai` reads your repo's recent commit history and tells Claude to match whatever conventions your team already uses — conventional commits, gitmoji, ticket prefixes, freeform, whatever.
 
 ## How it works
 
@@ -27,18 +27,18 @@ claude login
 From any git repo with staged (or unstaged) changes:
 
 ```bash
-# Run directly with bunx (no install needed)
-bunx git-commit-ai
+# Run directly with npx (no install needed)
+npx git-acai@latest
 
 # Or install globally
-bun install -g git-commit-ai
-git-commit-ai
+npm install -g git-acai
+acai
 ```
 
 ### The flow
 
 ```
-┌  git-commit-ai
+┌  acai
 │
 ◇  3 files staged
 │

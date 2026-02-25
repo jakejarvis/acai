@@ -13,7 +13,7 @@ async function main() {
     process.exit(0);
   }
 
-  p.intro("git-commit-ai");
+  p.intro("acai");
 
   // ── Preflight checks ──────────────────────────────────────────────
   const s = p.spinner();
@@ -245,7 +245,7 @@ async function editInEditor(message: string): Promise<string | null> {
   const { spawn } = await import("node:child_process");
   const { writeFileSync, readFileSync, unlinkSync } = await import("node:fs");
   const editor = process.env.EDITOR || process.env.VISUAL || "vi";
-  const tmpPath = `/tmp/git-commit-ai-edit-${Date.now()}.txt`;
+  const tmpPath = `/tmp/acai-edit-${Date.now()}.txt`;
 
   writeFileSync(tmpPath, message, "utf-8");
 
