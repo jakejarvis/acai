@@ -15,7 +15,6 @@
     "README.md"
   ],
   "devDependencies": {
-    "@clack/prompts": "^1.0.1",
     "@types/node": "^25.3.0",
     "tsdown": "^0.20.3",
     "typescript": "^5.9.3"
@@ -26,5 +25,8 @@
     "ai",
     "claude",
     "llm"
-  ]
+  ],
+  "dependencies": {
+    "@clack/prompts": "^1.0.1"
+  }
 }
