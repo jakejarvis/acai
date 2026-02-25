@@ -61,6 +61,8 @@ export async function generateCommitMessage(
         "json",
         "--model",
         model,
+        "--tools",
+        "",
         "--no-session-persistence",
         "--system-prompt",
         systemPrompt,
@@ -122,7 +124,8 @@ function buildSystemPrompt(
       `Since this is a new repo with no commit history, use this default style:`,
       `- Conventional commits format (feat:, fix:, chore:, docs:, refactor:, etc.)`,
       `- Imperative mood, lowercase after prefix`,
-      `- Subject line only unless the change is complex enough to warrant a body`,
+      `- Subject line followed by an optional body with 1-3 bullet points summarizing key changes`,
+      `- Only include body bullets when the diff warrants it — don't add filler`,
       ``
     );
   }
@@ -140,6 +143,10 @@ function buildSystemPrompt(
     `3. Do NOT invent issue/ticket numbers unless they appear in the diff.`,
     `4. If the style uses a subject + body format, separate them with a blank line.`,
     `   Wrap body lines at 72 characters.`,
+    `5. When the repo has no established style, default to conventional commits (feat:, fix:, chore:, etc.)`,
+    `   with an optional body of 1-3 concise bullet points. Only include bullets when the changes are`,
+    `   complex enough to warrant them — do not pad with filler.`,
+    `6. NEVER add "Co-authored-by", "Signed-off-by", or any git trailers to the commit message.`,
   );
 
   if (instructions) {
