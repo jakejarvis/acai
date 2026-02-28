@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { exec } from "tinyexec";
 import { buildSystemPrompt, buildUserPrompt } from "./prompts";
 
 export interface Provider {
@@ -29,6 +29,7 @@ const claude: Provider = {
       model,
       "--tools",
       "",
+      "--strict-mcp-config",
       "--no-session-persistence",
       "--system-prompt",
       systemPrompt,
@@ -73,6 +74,8 @@ const codex: Provider = {
       `developer_instructions=${systemPrompt}`,
       "-c",
       "model_reasoning_effort=medium",
+      "-c",
+      "check_for_update_on_startup=false",
       "--ephemeral",
       "--sandbox",
       "read-only",
@@ -93,15 +96,10 @@ export const providers: Record<string, Provider> = { claude, codex };
  * Check that a provider's CLI binary is installed and accessible.
  */
 export async function ensureProvider(provider: Provider): Promise<void> {
-  const ok = await new Promise<boolean>((resolve) => {
-    const proc = spawn(provider.bin, provider.versionArgs, {
-      stdio: ["ignore", "ignore", "ignore"],
-    });
-    proc.on("error", () => resolve(false));
-    proc.on("close", (code) => resolve(code === 0));
+  const { exitCode } = await exec(provider.bin, provider.versionArgs, {
+    nodeOptions: { stdio: ["ignore", "pipe", "pipe"] },
   });
-
-  if (!ok) {
+  if (exitCode !== 0) {
     throw new Error(
       `${provider.name} CLI ("${provider.bin}") not found. Make sure it is installed and on your PATH.`,
     );
@@ -131,30 +129,14 @@ export async function generateCommitMessage(
 
   const args = provider.buildArgs({ userPrompt, systemPrompt, model });
 
-  const { stdout, stderr, code } = await new Promise<{
-    stdout: string;
-    stderr: string;
-    code: number | null;
-  }>((resolve, reject) => {
-    const proc = spawn(provider.bin, args, {
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-
-    let stdout = "";
-    let stderr = "";
-    proc.stdout.on("data", (chunk: Buffer) => {
-      stdout += chunk;
-    });
-    proc.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk;
-    });
-    proc.on("error", reject);
-    proc.on("close", (code) => resolve({ stdout, stderr, code }));
+  const { stdout, stderr, exitCode } = await exec(provider.bin, args, {
+    timeout: 120_000,
+    nodeOptions: { stdio: ["ignore", "pipe", "pipe"] },
   });
 
-  if (code !== 0) {
+  if (exitCode !== 0) {
     throw new Error(
-      `${provider.name} exited with code ${code}\n${stderr || stdout}`,
+      `${provider.name} exited with code ${exitCode}\n${stderr || stdout}`,
     );
   }
 

@@ -28,7 +28,7 @@ No test suite is configured.
 ### Key modules
 
 - `bin/cli.ts` — entry point and interactive flow orchestrator using `@clack/prompts`
-- `src/provider.ts` — provider interface, registry (claude + codex), `ensureProvider()` and `generateCommitMessage()` functions
+- `src/providers.ts` — provider interface, registry (claude + codex), `ensureProvider()` and `generateCommitMessage()` functions
 - `src/prompts.ts` — shared prompt-building logic (`buildSystemPrompt`, `buildUserPrompt`) and intelligent diff truncation at hunk boundaries
 - `src/git.ts` — git operations wrapper (diff, staging, commit via temp file to avoid shell escaping)
 - `src/args.ts` — CLI argument parsing via `node:util parseArgs`; supports `-p`/`--provider`, `-m`/`--model`, `-y`/`--yolo` flags and `ACAI_PROVIDER`/`ACAI_MODEL` env vars

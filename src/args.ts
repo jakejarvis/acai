@@ -1,5 +1,5 @@
 import { type ParseArgsOptionsConfig, parseArgs } from "node:util";
-import { providers } from "./provider";
+import { providers } from "./providers";
 
 /**
  * Resolved configuration for the CLI.
@@ -8,8 +8,8 @@ import { providers } from "./provider";
 export interface Config {
   provider: string;
   model: string;
-  help: boolean;
   yolo: boolean;
+  help: boolean;
 }
 
 const DEFAULT_PROVIDER = "claude";
@@ -58,8 +58,8 @@ Examples:
   acai                          # use Claude with default model
   acai -p codex                 # use OpenAI Codex CLI
   acai -p codex -m o4-mini      # use Codex with specific model
-  acai --model haiku             # use Claude with haiku for speed
-  acai -m opus                   # use Claude with opus for max quality
+  acai --model haiku            # use Claude with haiku for speed
+  acai --yolo                   # skip interaction and commit all changes
 `.trimStart(),
   );
 }

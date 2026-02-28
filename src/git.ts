@@ -1,66 +1,40 @@
-import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-
-/**
- * Run a command and return its stdout as a string.
- * Returns null if the command fails.
- */
-async function run(
-  cmd: string[],
-  opts?: { cwd?: string; raw?: boolean },
-): Promise<string | null> {
-  const [bin, ...args] = cmd;
-  return new Promise((resolve) => {
-    const proc = spawn(bin, args, {
-      cwd: opts?.cwd,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    let stdout = "";
-    proc.stdout.on("data", (chunk: Buffer) => {
-      stdout += chunk;
-    });
-    proc.on("error", () => resolve(null));
-    proc.on("close", (code) => {
-      resolve(code === 0 ? (opts?.raw ? stdout : stdout.trim()) : null);
-    });
-  });
-}
-
-/**
- * Run a command, returning stdout. Throws on failure.
- */
-async function runOrThrow(
-  cmd: string[],
-  opts?: { cwd?: string },
-): Promise<string> {
-  const result = await run(cmd, opts);
-  if (result === null) {
-    throw new Error(`Command failed: ${cmd.join(" ")}`);
-  }
-  return result;
-}
+import { exec } from "tinyexec";
 
 export async function ensureGitRepo() {
-  const result = await run(["git", "rev-parse", "--is-inside-work-tree"]);
-  if (result !== "true") {
+  const { stdout, exitCode } = await exec("git", [
+    "rev-parse",
+    "--is-inside-work-tree",
+  ]);
+  if (exitCode !== 0 || stdout.trim() !== "true") {
     throw new Error("Not inside a git repository.");
   }
 }
 
 export async function getStagedDiff(): Promise<string | null> {
-  return run(["git", "diff", "--cached"]);
+  const { stdout, exitCode } = await exec("git", ["diff", "--cached"]);
+  return exitCode === 0 ? stdout.trim() : null;
 }
 
 export async function getStagedStat(): Promise<string | null> {
-  return run(["git", "diff", "--cached", "--stat"]);
+  const { stdout, exitCode } = await exec("git", [
+    "diff",
+    "--cached",
+    "--stat",
+  ]);
+  return exitCode === 0 ? stdout.trim() : null;
 }
 
 export async function getStagedFiles(): Promise<string[]> {
-  const result = await run(["git", "diff", "--cached", "--name-only"]);
-  if (!result) return [];
-  return result.split("\n").filter(Boolean);
+  const { stdout, exitCode } = await exec("git", [
+    "diff",
+    "--cached",
+    "--name-only",
+  ]);
+  if (exitCode !== 0 || !stdout.trim()) return [];
+  return stdout.trim().split("\n").filter(Boolean);
 }
 
 export async function hasUnstagedChanges(): Promise<boolean> {
@@ -78,15 +52,19 @@ export interface UnstagedFile {
  * Parses the index (XY) columns of `git status --porcelain`.
  */
 export async function getUnstagedFiles(): Promise<UnstagedFile[]> {
-  const raw = await run(["git", "status", "--porcelain", "-z"], { raw: true });
-  if (!raw) return [];
+  const { stdout, exitCode } = await exec("git", [
+    "status",
+    "--porcelain",
+    "-z",
+  ]);
+  if (exitCode !== 0 || !stdout) return [];
 
   const files: UnstagedFile[] = [];
 
   // -z gives NUL-delimited entries with unquoted paths.
   // Renamed entries have an extra NUL-delimited field (the original path)
   // which we skip by consuming the next entry when we see R in index column.
-  const entries = raw.split("\0");
+  const entries = stdout.split("\0");
 
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
@@ -112,26 +90,26 @@ export async function getUnstagedFiles(): Promise<UnstagedFile[]> {
 }
 
 export async function stageAll(): Promise<void> {
-  await runOrThrow(["git", "add", "-A"]);
+  await exec("git", ["add", "-A"], { throwOnError: true });
 }
 
 export async function stageFiles(paths: string[]): Promise<void> {
   if (paths.length === 0) return;
-  await runOrThrow(["git", "add", "--", ...paths]);
+  await exec("git", ["add", "--", ...paths], { throwOnError: true });
 }
 
 /**
  * Get the last N non-merge commit messages (subject + body).
  */
 export async function getRecentCommitLog(count = 10): Promise<string | null> {
-  return run([
-    "git",
+  const { stdout, exitCode } = await exec("git", [
     "log",
     `--format=%s%n%b%n---`,
     `-n`,
     String(count),
     "--no-merges",
   ]);
+  return exitCode === 0 ? stdout.trim() : null;
 }
 
 /**
@@ -143,7 +121,7 @@ export async function commit(message: string): Promise<void> {
   writeFileSync(tmpPath, message, "utf-8");
 
   try {
-    await runOrThrow(["git", "commit", "-F", tmpPath]);
+    await exec("git", ["commit", "-F", tmpPath], { throwOnError: true });
   } finally {
     try {
       rmSync(tmpDir, { recursive: true });

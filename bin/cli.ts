@@ -19,7 +19,7 @@ import {
   ensureProvider,
   generateCommitMessage,
   providers,
-} from "../src/provider";
+} from "../src/providers";
 
 async function main() {
   const config = parseConfig();
