@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import * as p from "@clack/prompts";
+import pc from "picocolors";
 import { ensureGitRepo, getStagedDiff, getStagedStat, getStagedFiles, getUnstagedFiles, stageAll, stageFiles, getRecentCommitLog, commit, type UnstagedFile } from "../src/git";
 import { providers, ensureProvider, generateCommitMessage } from "../src/provider";
 import { parseConfig, printUsage } from "../src/args";
@@ -52,7 +53,7 @@ async function main() {
     }
 
     const shouldStage = await p.confirm({
-      message: "No staged changes. Stage all changes?",
+      message: "Stage all changes?",
       initialValue: true,
     });
 
@@ -105,7 +106,7 @@ async function main() {
   const MAX_LISTED = 5;
   const listed = files.slice(0, MAX_LISTED).join(", ");
   const extra = files.length > MAX_LISTED ? ` and ${files.length - MAX_LISTED} more` : "";
-  p.log.info(`Staged: ${listed}${extra}`);
+  p.log.info(`Staged ${files.length} file${files.length === 1 ? "" : "s"}: ${pc.dim(listed + extra)}`);
 
   // ── Gather repo style context ──────────────────────────────────────
   const commitLog = (await getRecentCommitLog(10)) || "";
@@ -114,7 +115,7 @@ async function main() {
   let instructions: string | undefined;
 
   while (true) {
-    s.start(`Generating with ${provider.name} (${model})`);
+    s.start(`Waiting for ${provider.name}`);
 
     let message: string;
     try {
@@ -132,19 +133,18 @@ async function main() {
       process.exit(1);
     }
 
-    s.stop("Generated");
+    s.stop(`Here's what ${provider.name} ${pc.dim(`(${model})`)} came up with:`);
 
     // Display the message
     p.log.message(formatMessageForDisplay(message));
 
     const action = await p.select({
-      message: "What do you want to do?",
+      message: "What should we do?",
       options: [
-        { value: "commit", label: "✓ Commit", hint: "accept and commit" },
-        { value: "edit", label: "✎ Edit", hint: "open in $EDITOR before committing" },
-        { value: "revise", label: "↻ Revise", hint: `give ${provider.name} feedback and regenerate` },
-        { value: "regen", label: "⟳ Regenerate", hint: "try again from scratch" },
-        { value: "copy", label: "⎘ Copy", hint: "copy to clipboard, don't commit" },
+        { value: "commit", label: "✓ Commit" },
+        { value: "edit", label: "✎ Edit", hint: "open in editor and commit on save" },
+        { value: "revise", label: "↻ Revise", hint: `give ${provider.name} feedback and try again` },
+        { value: "copy", label: "⎘ Copy", hint: "copy message to clipboard and exit" },
         { value: "cancel", label: "✕ Cancel" },
       ],
     });
@@ -187,11 +187,6 @@ async function main() {
       }
 
       instructions = `The user wants you to revise the message. Previous attempt was:\n\`\`\`\n${message}\n\`\`\`\nUser feedback: ${feedback}`;
-      continue;
-    }
-
-    if (action === "regen") {
-      instructions = undefined; // fresh attempt
       continue;
     }
   }
@@ -245,9 +240,9 @@ function formatMessageForDisplay(message: string): string {
   const subject = lines[0];
   const body = lines.slice(1).join("\n").trim();
 
-  let display = `\x1b[1;32m${subject}\x1b[0m`;
+  let display = pc.bold(pc.green(subject));
   if (body) {
-    display += `\n\x1b[2m${body}\x1b[0m`;
+    display += `\n${pc.dim(body)}`;
   }
   return display;
 }
