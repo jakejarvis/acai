@@ -243,22 +243,26 @@ function formatMessageForDisplay(message: string): string {
 
 async function editInEditor(message: string): Promise<string | null> {
   const { spawn } = await import("node:child_process");
-  const { writeFileSync, readFileSync, unlinkSync } = await import("node:fs");
+  const { writeFileSync, readFileSync, mkdtempSync, rmSync } = await import("node:fs");
+  const { join } = await import("node:path");
+  const { tmpdir } = await import("node:os");
   const editor = process.env.EDITOR || process.env.VISUAL || "vi";
-  const tmpPath = `/tmp/acai-edit-${Date.now()}.txt`;
+  const tmpDir = mkdtempSync(join(tmpdir(), "acai-"));
+  const tmpPath = join(tmpDir, "COMMIT_EDITMSG");
 
   writeFileSync(tmpPath, message, "utf-8");
 
   try {
     const code = await new Promise<number | null>((resolve, reject) => {
-      const proc = spawn(editor, [tmpPath], { stdio: "inherit" });
+      // Run through shell so EDITOR="code --wait" and similar values work
+      const proc = spawn(editor, [tmpPath], { stdio: "inherit", shell: true });
       proc.on("error", reject);
       proc.on("close", resolve);
     });
     if (code !== 0) return null;
     return readFileSync(tmpPath, "utf-8");
   } finally {
-    try { unlinkSync(tmpPath); } catch {}
+    try { rmSync(tmpDir, { recursive: true }); } catch {}
   }
 }
 

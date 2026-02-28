@@ -88,18 +88,25 @@ export async function generateCommitMessage(
     );
   }
 
+  let parsed: any;
   try {
-    const parsed = JSON.parse(stdout);
-    if (parsed.is_error) {
-      throw new Error(`Claude error: ${parsed.result}`);
-    }
-    return (parsed.result || "").trim();
-  } catch (e) {
-    // If it's our own error, rethrow
-    if (e instanceof Error && e.message.startsWith("Claude error:")) throw e;
-    // Otherwise JSON parse failed — use raw output
-    return stdout.trim();
+    parsed = JSON.parse(stdout);
+  } catch {
+    throw new Error(
+      `Failed to parse Claude response as JSON. Raw output:\n${stdout.slice(0, 500)}`
+    );
   }
+
+  if (parsed.is_error) {
+    throw new Error(`Claude error: ${parsed.result}`);
+  }
+
+  const result = (parsed.result || "").trim();
+  if (!result) {
+    throw new Error("Claude returned an empty commit message.");
+  }
+
+  return result;
 }
 
 function buildSystemPrompt(

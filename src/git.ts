@@ -1,4 +1,6 @@
-import { writeFileSync, unlinkSync } from "node:fs";
+import { writeFileSync, unlinkSync, mkdtempSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { spawn } from "node:child_process";
 
 /**
@@ -76,17 +78,28 @@ export interface UnstagedFile {
  * Parses the index (XY) columns of `git status --porcelain`.
  */
 export async function getUnstagedFiles(): Promise<UnstagedFile[]> {
-  const raw = await run(["git", "status", "--porcelain"]);
+  const raw = await run(["git", "status", "--porcelain", "-z"]);
   if (!raw) return [];
 
   const files: UnstagedFile[] = [];
 
-  for (const line of raw.split("\n")) {
-    if (!line) continue;
-    const wt = line[1]; // working-tree status (second char)
-    const path = line.slice(3);
+  // -z gives NUL-delimited entries with unquoted paths.
+  // Renamed entries have an extra NUL-delimited field (the original path)
+  // which we skip by consuming the next entry when we see R in index column.
+  const entries = raw.split("\0");
 
-    if (line.startsWith("??")) {
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    if (!entry || entry.length < 4) continue;
+
+    const index = entry[0]; // index status (first char)
+    const wt = entry[1]; // working-tree status (second char)
+    const path = entry.slice(3);
+
+    // Skip the extra "original path" entry for renames in the index
+    if (index === "R") i++;
+
+    if (entry[0] === "?" && entry[1] === "?") {
       files.push({ path, status: "untracked" });
     } else if (wt === "D") {
       files.push({ path, status: "deleted" });
@@ -125,7 +138,8 @@ export async function getRecentCommitLog(count = 10): Promise<string | null> {
  * Commit using a temp file (avoids shell escaping nightmares).
  */
 export async function commit(message: string): Promise<void> {
-  const tmpPath = `/tmp/acai-${Date.now()}.txt`;
+  const tmpDir = mkdtempSync(join(tmpdir(), "acai-"));
+  const tmpPath = join(tmpDir, "commit-msg.txt");
   writeFileSync(tmpPath, message, "utf-8");
 
   try {
@@ -139,7 +153,7 @@ export async function commit(message: string): Promise<void> {
     if (code !== 0) throw new Error("git commit failed");
   } finally {
     try {
-      unlinkSync(tmpPath);
+      rmSync(tmpDir, { recursive: true });
     } catch {}
   }
 }
