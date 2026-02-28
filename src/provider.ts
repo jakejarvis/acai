@@ -35,12 +35,13 @@ const claude: Provider = {
     ];
   },
   parseOutput(stdout) {
+    // biome-ignore lint/suspicious/noExplicitAny: response is JSON
     let parsed: any;
     try {
       parsed = JSON.parse(stdout);
     } catch {
       throw new Error(
-        `Failed to parse Claude response as JSON. Raw output:\n${stdout.slice(0, 500)}`
+        `Failed to parse Claude response as JSON. Raw output:\n${stdout.slice(0, 500)}`,
       );
     }
 
@@ -64,12 +65,17 @@ const codex: Provider = {
   defaultModel: "gpt-5.1-codex-mini",
   buildArgs({ userPrompt, systemPrompt, model }) {
     return [
-      "exec", userPrompt,
-      "--model", model,
-      "-c", `developer_instructions=${systemPrompt}`,
-      "-c", "model_reasoning_effort=medium",
+      "exec",
+      userPrompt,
+      "--model",
+      model,
+      "-c",
+      `developer_instructions=${systemPrompt}`,
+      "-c",
+      "model_reasoning_effort=medium",
       "--ephemeral",
-      "--sandbox", "read-only",
+      "--sandbox",
+      "read-only",
     ];
   },
   parseOutput(stdout) {
@@ -97,7 +103,7 @@ export async function ensureProvider(provider: Provider): Promise<void> {
 
   if (!ok) {
     throw new Error(
-      `${provider.name} CLI ("${provider.bin}") not found. Make sure it is installed and on your PATH.`
+      `${provider.name} CLI ("${provider.bin}") not found. Make sure it is installed and on your PATH.`,
     );
   }
 }
@@ -116,7 +122,7 @@ interface GenerateOpts {
  */
 export async function generateCommitMessage(
   provider: Provider,
-  opts: GenerateOpts
+  opts: GenerateOpts,
 ): Promise<string> {
   const { diff, stat, files, commitLog, model, instructions } = opts;
 
@@ -148,7 +154,7 @@ export async function generateCommitMessage(
 
   if (code !== 0) {
     throw new Error(
-      `${provider.name} exited with code ${code}\n${stderr || stdout}`
+      `${provider.name} exited with code ${code}\n${stderr || stdout}`,
     );
   }
 

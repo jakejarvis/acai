@@ -1,18 +1,21 @@
-# AGENTS.md
+# CLAUDE.md
 
 This file provides guidance to agents when working with code in this repository.
 
-## Build
+## Build & Quality
 
 ```bash
-npm run build    # bundles bin/cli.ts → dist/cli.mjs via tsdown with minification
+npm run build        # bundles bin/cli.ts → dist/cli.mjs via tsdown with minification
+npm run lint         # biome check
+npm run format       # biome format --write
+npm run check-types  # tsc --noEmit
 ```
 
-No test or lint scripts are configured.
+No test suite is configured.
 
 ## Architecture
 
-**acai** is a CLI tool (~500 lines of TypeScript) that generates git commit messages using AI CLI tools (Claude Code, OpenAI Codex). It has zero runtime dependencies — all packages are devDependencies bundled at build time.
+**acai** is an opinionated CLI tool that generates git commit messages using already-installed AI tools (Claude Code, OpenAI Codex).
 
 ### Data flow
 
@@ -28,7 +31,7 @@ No test or lint scripts are configured.
 - `src/provider.ts` — provider interface, registry (claude + codex), `ensureProvider()` and `generateCommitMessage()` functions
 - `src/prompts.ts` — shared prompt-building logic (`buildSystemPrompt`, `buildUserPrompt`) and intelligent diff truncation at hunk boundaries
 - `src/git.ts` — git operations wrapper (diff, staging, commit via temp file to avoid shell escaping)
-- `src/args.ts` — CLI argument parsing via `node:util parseArgs`; supports `-p`/`--provider`, `-m`/`--model` flags and `ACAI_PROVIDER`/`ACAI_MODEL` env vars
+- `src/args.ts` — CLI argument parsing via `node:util parseArgs`; supports `-p`/`--provider`, `-m`/`--model`, `-y`/`--yolo` flags and `ACAI_PROVIDER`/`ACAI_MODEL` env vars
 
 ### Key design decisions
 

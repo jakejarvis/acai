@@ -1,35 +1,53 @@
 {
-  "name": "acai",
-  "version": "1.0.0",
-  "description": "Yet another AI commit message generator",
+  "name": "@jakejarvis/acai",
+  "version": "0.1.0",
   "license": "MIT",
+  "description": "Yet another AI commit message generator",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jakejarvis/acai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jakejarvis/acai/issues"
+  },
+  "author": {
+    "name": "Jake Jarvis",
+    "email": "jake@jarv.is",
+    "url": "https://jarv.is"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "bin": {
     "acai": "./dist/cli.mjs"
   },
-  "scripts": {
-    "build": "tsdown"
-  },
   "files": [
-    "dist/",
-    "README.md",
-    "LICENSE"
+    "dist"
   ],
-  "engines": {
-    "node": ">=18"
+  "scripts": {
+    "build": "tsdown",
+    "lint": "biome check",
+    "format": "biome format --write",
+    "check-types": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.4.4",
     "@clack/prompts": "1.0.1",
     "@types/node": "^25.3.2",
     "picocolors": "1.1.1",
     "tsdown": "^0.20.3",
     "typescript": "^5.9.3"
   },
+  "engines": {
+    "node": ">=18.19"
+  },
   "keywords": [
     "git",
     "commit",
     "ai",
     "claude",
-    "llm"
+    "codex"
   ]
 }

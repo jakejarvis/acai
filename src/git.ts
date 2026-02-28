@@ -1,7 +1,7 @@
-import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
 import { spawn } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 /**
  * Run a command and return its stdout as a string.
@@ -9,7 +9,7 @@ import { spawn } from "node:child_process";
  */
 async function run(
   cmd: string[],
-  opts?: { cwd?: string; raw?: boolean }
+  opts?: { cwd?: string; raw?: boolean },
 ): Promise<string | null> {
   const [bin, ...args] = cmd;
   return new Promise((resolve) => {
@@ -33,7 +33,7 @@ async function run(
  */
 async function runOrThrow(
   cmd: string[],
-  opts?: { cwd?: string }
+  opts?: { cwd?: string },
 ): Promise<string> {
   const result = await run(cmd, opts);
   if (result === null) {

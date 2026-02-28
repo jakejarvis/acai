@@ -38,10 +38,10 @@ From any git repo with staged (or unstaged) changes:
 
 ```bash
 # Run directly with npx (no install needed)
-npx git-acai@latest
+npx @jakejarvis/acai@latest
 
 # Or install globally
-npm install -g git-acai
+npm install -g @jakejarvis/acai
 acai
 
 # Use a different provider

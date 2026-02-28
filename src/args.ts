@@ -1,4 +1,4 @@
-import { parseArgs, type ParseArgsOptionsConfig } from "node:util";
+import { type ParseArgsOptionsConfig, parseArgs } from "node:util";
 import { providers } from "./provider";
 
 /**
@@ -29,7 +29,10 @@ export function parseConfig(): Config {
   });
 
   return {
-    provider: (values.provider as string | undefined) ?? process.env.ACAI_PROVIDER ?? DEFAULT_PROVIDER,
+    provider:
+      (values.provider as string | undefined) ??
+      process.env.ACAI_PROVIDER ??
+      DEFAULT_PROVIDER,
     model: (values.model as string | undefined) ?? process.env.ACAI_MODEL ?? "",
     yolo: (values.yolo as boolean | undefined) ?? false,
     help: (values.help as boolean | undefined) ?? false,
@@ -39,7 +42,8 @@ export function parseConfig(): Config {
 export function printUsage(): void {
   const providerNames = Object.keys(providers).join(", ");
 
-  console.log(`
+  console.log(
+    `
 Usage: acai [options]
 
 Options:
@@ -56,5 +60,6 @@ Examples:
   acai -p codex -m o4-mini      # use Codex with specific model
   acai --model haiku             # use Claude with haiku for speed
   acai -m opus                   # use Claude with opus for max quality
-`.trimStart());
+`.trimStart(),
+  );
 }

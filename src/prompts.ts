@@ -4,7 +4,7 @@
 
 export function buildSystemPrompt(
   commitLog: string,
-  instructions?: string
+  instructions?: string,
 ): string {
   const truncatedLog = truncate(commitLog, 10_000);
   const hasHistory = Boolean(commitLog.trim());
@@ -26,7 +26,7 @@ export function buildSystemPrompt(
       `- Imperative mood, lowercase after prefix`,
       `- Subject line followed by an optional body with 1-3 bullet points summarizing key changes`,
       `- Only include body bullets when the diff warrants it — don't add filler`,
-      ``
+      ``,
     );
   }
 
@@ -52,16 +52,12 @@ export function buildSystemPrompt(
   );
 
   if (instructions) {
-    parts.push(
-      ``,
-      `ADDITIONAL USER INSTRUCTIONS:`,
-      instructions
-    );
+    parts.push(``, `ADDITIONAL USER INSTRUCTIONS:`, instructions);
   }
 
   parts.push(
     ``,
-    `REMINDER: Output ONLY the raw commit message text. No quotes, no markdown fences, no explanation, no preamble.`
+    `REMINDER: Output ONLY the raw commit message text. No quotes, no markdown fences, no explanation, no preamble.`,
   );
 
   return parts.join("\n");
@@ -70,7 +66,7 @@ export function buildSystemPrompt(
 export function buildUserPrompt(
   diff: string,
   stat: string,
-  files: string[]
+  files: string[],
 ): string {
   const truncatedDiff = truncateDiff(diff, 15_000);
 
@@ -93,7 +89,7 @@ export function buildUserPrompt(
  */
 function truncate(text: string, maxChars: number): string {
   if (text.length <= maxChars) return text;
-  return text.slice(0, maxChars) + "\n\n[... truncated ...]";
+  return `${text.slice(0, maxChars)}\n\n[... truncated ...]`;
 }
 
 /**
@@ -122,7 +118,8 @@ function truncateDiff(diff: string, maxChars: number): string {
   }
 
   if (result.length < diff.length) {
-    result += "\n\n[... diff truncated — stat summary above covers all files ...]";
+    result +=
+      "\n\n[... diff truncated — stat summary above covers all files ...]";
   }
 
   return result;

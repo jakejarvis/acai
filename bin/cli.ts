@@ -2,9 +2,24 @@
 
 import * as p from "@clack/prompts";
 import pc from "picocolors";
-import { ensureGitRepo, getStagedDiff, getStagedStat, getStagedFiles, getUnstagedFiles, stageAll, stageFiles, getRecentCommitLog, commit, type UnstagedFile } from "../src/git";
-import { providers, ensureProvider, generateCommitMessage } from "../src/provider";
 import { parseConfig, printUsage } from "../src/args";
+import {
+  commit,
+  ensureGitRepo,
+  getRecentCommitLog,
+  getStagedDiff,
+  getStagedFiles,
+  getStagedStat,
+  getUnstagedFiles,
+  stageAll,
+  stageFiles,
+  type UnstagedFile,
+} from "../src/git";
+import {
+  ensureProvider,
+  generateCommitMessage,
+  providers,
+} from "../src/provider";
 
 async function main() {
   const config = parseConfig();
@@ -17,7 +32,9 @@ async function main() {
   const provider = providers[config.provider];
   if (!provider) {
     const available = Object.keys(providers).join(", ");
-    console.error(`Unknown provider "${config.provider}". Available: ${available}`);
+    console.error(
+      `Unknown provider "${config.provider}". Available: ${available}`,
+    );
     process.exit(1);
   }
 
@@ -37,8 +54,8 @@ async function main() {
 
   try {
     await ensureProvider(provider);
-  } catch (e: any) {
-    p.cancel(e.message);
+  } catch (e: unknown) {
+    p.cancel((e as Error).message);
     process.exit(1);
   }
 
@@ -68,7 +85,10 @@ async function main() {
       if (shouldStage) {
         await stageAll();
       } else {
-        const picked = await promptFilePicker(unstaged, "Select files to stage");
+        const picked = await promptFilePicker(
+          unstaged,
+          "Select files to stage",
+        );
         if (!picked) {
           p.cancel("Nothing staged.");
           process.exit(0);
@@ -102,6 +122,7 @@ async function main() {
         await promptFilePicker(remaining, "Select additional files to stage");
 
         // Re-fetch diff since staging changed
+        // biome-ignore lint/style/noNonNullAssertion: diff is guaranteed to be non-null
         diff = (await getStagedDiff())!;
       }
     }
@@ -111,8 +132,11 @@ async function main() {
   const files = await getStagedFiles();
   const MAX_LISTED = 5;
   const listed = files.slice(0, MAX_LISTED).join(", ");
-  const extra = files.length > MAX_LISTED ? ` and ${files.length - MAX_LISTED} more` : "";
-  p.log.info(`Staged ${files.length} file${files.length === 1 ? "" : "s"}: ${pc.dim(listed + extra)}`);
+  const extra =
+    files.length > MAX_LISTED ? ` and ${files.length - MAX_LISTED} more` : "";
+  p.log.info(
+    `Staged ${files.length} file${files.length === 1 ? "" : "s"}: ${pc.dim(listed + extra)}`,
+  );
 
   // ── Gather repo style context ──────────────────────────────────────
   const commitLog = (await getRecentCommitLog(10)) || "";
@@ -133,13 +157,15 @@ async function main() {
         model,
         instructions,
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
       s.stop("Failed");
-      p.cancel(`Generation failed: ${e.message}`);
+      p.cancel(`Generation failed: ${(e as Error).message}`);
       process.exit(1);
     }
 
-    s.stop(`Here's what ${provider.name} ${pc.dim(`(${model})`)} came up with:`);
+    s.stop(
+      `Here's what ${provider.name} ${pc.dim(`(${model})`)} came up with:`,
+    );
 
     // Display the message
     p.log.message(formatMessageForDisplay(message));
@@ -153,9 +179,21 @@ async function main() {
       message: "What should we do?",
       options: [
         { value: "commit", label: "✓ Commit" },
-        { value: "edit", label: "✎ Edit", hint: "open in editor and commit on save" },
-        { value: "revise", label: "↻ Revise", hint: `give ${provider.name} feedback and try again` },
-        { value: "copy", label: "⎘ Copy", hint: "copy message to clipboard and exit" },
+        {
+          value: "edit",
+          label: "✎ Edit",
+          hint: "open in editor and commit on save",
+        },
+        {
+          value: "revise",
+          label: "↻ Revise",
+          hint: `give ${provider.name} feedback and try again`,
+        },
+        {
+          value: "copy",
+          label: "⎘ Copy",
+          hint: "copy message to clipboard and exit",
+        },
         { value: "cancel", label: "✕ Cancel" },
       ],
     });
@@ -172,7 +210,7 @@ async function main() {
 
     if (action === "edit") {
       const edited = await editInEditor(message);
-      if (edited && edited.trim()) {
+      if (edited?.trim()) {
         await doCommit(edited.trim());
       } else {
         p.log.warn("Empty message after editing — not committing.");
@@ -190,7 +228,8 @@ async function main() {
     if (action === "revise") {
       const feedback = await p.text({
         message: `What should ${provider.name} change?`,
-        placeholder: "e.g. make it shorter, mention the API refactor, use past tense…",
+        placeholder:
+          "e.g. make it shorter, mention the API refactor, use past tense…",
       });
 
       if (p.isCancel(feedback) || !feedback) {
@@ -198,7 +237,6 @@ async function main() {
       }
 
       instructions = `The user wants you to revise the message. Previous attempt was:\n\`\`\`\n${message}\n\`\`\`\nUser feedback: ${feedback}`;
-      continue;
     }
   }
 }
@@ -209,7 +247,7 @@ async function main() {
  */
 async function promptFilePicker(
   files: UnstagedFile[],
-  message: string
+  message: string,
 ): Promise<boolean> {
   const STATUS_LABELS: Record<string, string> = {
     modified: "Modified",
@@ -239,9 +277,9 @@ async function doCommit(message: string) {
   try {
     await commit(message);
     s.stop("Committed!");
-  } catch (e: any) {
+  } catch (e: unknown) {
     s.stop("Failed");
-    p.cancel(`Commit failed: ${e.message}`);
+    p.cancel(`Commit failed: ${(e as Error).message}`);
     process.exit(1);
   }
 }
@@ -260,7 +298,9 @@ function formatMessageForDisplay(message: string): string {
 
 async function editInEditor(message: string): Promise<string | null> {
   const { spawn } = await import("node:child_process");
-  const { writeFileSync, readFileSync, mkdtempSync, rmSync } = await import("node:fs");
+  const { writeFileSync, readFileSync, mkdtempSync, rmSync } = await import(
+    "node:fs"
+  );
   const { join } = await import("node:path");
   const { tmpdir } = await import("node:os");
   const editor = process.env.EDITOR || process.env.VISUAL || "vi";
@@ -279,7 +319,9 @@ async function editInEditor(message: string): Promise<string | null> {
     if (code !== 0) return null;
     return readFileSync(tmpPath, "utf-8");
   } finally {
-    try { rmSync(tmpDir, { recursive: true }); } catch {}
+    try {
+      rmSync(tmpDir, { recursive: true });
+    } catch {}
   }
 }
 
@@ -288,10 +330,10 @@ async function copyToClipboard(text: string): Promise<void> {
 
   // Try common clipboard commands
   const cmds = [
-    ["pbcopy"],            // macOS
-    ["xclip", "-selection", "clipboard"],  // Linux X11
-    ["xsel", "--clipboard", "--input"],    // Linux X11 alt
-    ["wl-copy"],           // Wayland
+    ["pbcopy"], // macOS
+    ["xclip", "-selection", "clipboard"], // Linux X11
+    ["xsel", "--clipboard", "--input"], // Linux X11 alt
+    ["wl-copy"], // Wayland
   ];
 
   for (const [bin, ...args] of cmds) {
@@ -306,7 +348,7 @@ async function copyToClipboard(text: string): Promise<void> {
   }
 
   // Fallback: just print it
-  p.log.warn("Couldn't copy to clipboard. Here's the message:");
+  p.log.warn("Couldn't copy to clipboard. Here's the raw message:");
   console.log(text);
 }
 
