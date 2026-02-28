@@ -46,7 +46,9 @@ export function buildSystemPrompt(
     `5. When the repo has no established style, default to conventional commits (feat:, fix:, chore:, etc.)`,
     `   with an optional body of 1-3 concise bullet points. Only include bullets when the changes are`,
     `   complex enough to warrant them — do not pad with filler.`,
-    `6. NEVER add "Co-authored-by", "Signed-off-by", or any git trailers to the commit message.`,
+    `6. Disregard generated files (lockfiles, migration files, build output, etc.) when evaluating changes.`,
+    `   Focus on the human-authored source changes to determine the commit message.`,
+    `7. NEVER add "Co-authored-by", "Signed-off-by", or any git trailers to the commit message.`,
   );
 
   if (instructions) {
