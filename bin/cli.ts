@@ -2,7 +2,7 @@
 
 import * as p from "@clack/prompts";
 import { ensureGitRepo, getStagedDiff, getStagedStat, getStagedFiles, getUnstagedFiles, stageAll, stageFiles, getRecentCommitLog, commit, type UnstagedFile } from "../src/git";
-import { ensureClaude, generateCommitMessage } from "../src/claude";
+import { providers, ensureProvider, generateCommitMessage } from "../src/provider";
 import { parseConfig, printUsage } from "../src/args";
 
 async function main() {
@@ -12,6 +12,15 @@ async function main() {
     printUsage();
     process.exit(0);
   }
+
+  const provider = providers[config.provider];
+  if (!provider) {
+    const available = Object.keys(providers).join(", ");
+    console.error(`Unknown provider "${config.provider}". Available: ${available}`);
+    process.exit(1);
+  }
+
+  const model = config.model || provider.defaultModel;
 
   p.intro("acai");
 
@@ -26,7 +35,7 @@ async function main() {
   }
 
   try {
-    await ensureClaude();
+    await ensureProvider(provider);
   } catch (e: any) {
     p.cancel(e.message);
     process.exit(1);
@@ -106,12 +115,12 @@ async function main() {
 
     let message: string;
     try {
-      message = await generateCommitMessage({
+      message = await generateCommitMessage(provider, {
         diff,
         stat,
         files,
         commitLog,
-        model: config.model,
+        model,
         instructions,
       });
     } catch (e: any) {
@@ -130,7 +139,7 @@ async function main() {
       options: [
         { value: "commit", label: "✓ Commit", hint: "accept and commit" },
         { value: "edit", label: "✎ Edit", hint: "open in $EDITOR before committing" },
-        { value: "revise", label: "↻ Revise", hint: "give Claude feedback and regenerate" },
+        { value: "revise", label: "↻ Revise", hint: `give ${provider.name} feedback and regenerate` },
         { value: "regen", label: "⟳ Regenerate", hint: "try again from scratch" },
         { value: "copy", label: "⎘ Copy", hint: "copy to clipboard, don't commit" },
         { value: "cancel", label: "✕ Cancel" },
@@ -166,7 +175,7 @@ async function main() {
 
     if (action === "revise") {
       const feedback = await p.text({
-        message: "What should Claude change?",
+        message: `What should ${provider.name} change?`,
         placeholder: "e.g. make it shorter, mention the API refactor, use past tense…",
       });
 

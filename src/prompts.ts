@@ -1,115 +1,8 @@
-import { spawn } from "node:child_process";
-
 /**
- * Check that `claude` CLI is installed and accessible.
+ * Shared prompt-building logic for all providers.
  */
-export async function ensureClaude(): Promise<void> {
-  const ok = await new Promise<boolean>((resolve) => {
-    const proc = spawn("claude", ["--version"], {
-      stdio: ["ignore", "ignore", "ignore"],
-    });
-    proc.on("error", () => resolve(false));
-    proc.on("close", (code) => resolve(code === 0));
-  });
 
-  if (!ok) {
-    throw new Error(
-      [
-        "Claude Code not found. Install it using:",
-        "",
-        "    curl -fsSL https://claude.ai/install.sh | bash",
-        "",
-      ].join("\n")
-    );
-  }
-}
-
-interface GenerateOpts {
-  diff: string;
-  stat: string;
-  files: string[];
-  commitLog: string;
-  model: string;
-  instructions?: string;
-}
-
-/**
- * Generate a commit message by calling `claude -p` in headless mode.
- *
- * We pass the repo's recent commit log alongside the diff so Claude can
- * infer the style/format/conventions on its own — no manual parsing needed.
- */
-export async function generateCommitMessage(
-  opts: GenerateOpts
-): Promise<string> {
-  const { diff, stat, files, commitLog, model, instructions } = opts;
-
-  const systemPrompt = buildSystemPrompt(commitLog, instructions);
-  const userPrompt = buildUserPrompt(diff, stat, files);
-
-  const { stdout, stderr, code } = await new Promise<{
-    stdout: string;
-    stderr: string;
-    code: number | null;
-  }>((resolve, reject) => {
-    const proc = spawn(
-      "claude",
-      [
-        "-p",
-        userPrompt,
-        "--output-format",
-        "json",
-        "--model",
-        model,
-        "--tools",
-        "",
-        "--no-session-persistence",
-        "--system-prompt",
-        systemPrompt,
-      ],
-      { stdio: ["ignore", "pipe", "pipe"] }
-    );
-
-    let stdout = "";
-    let stderr = "";
-    proc.stdout.on("data", (chunk: Buffer) => {
-      stdout += chunk;
-    });
-    proc.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk;
-    });
-    proc.on("error", reject);
-    proc.on("close", (code) => resolve({ stdout, stderr, code }));
-  });
-
-  if (code !== 0) {
-    throw new Error(
-      `Claude exited with code ${code}\n${stderr || stdout}`
-    );
-  }
-
-  let parsed: any;
-  try {
-    parsed = JSON.parse(stdout);
-  } catch {
-    throw new Error(
-      `Failed to parse Claude response as JSON. Raw output:\n${stdout.slice(0, 500)}`
-    );
-  }
-
-  if (parsed.is_error) {
-    throw new Error(`Claude error: ${parsed.result}`);
-  }
-
-  const result = (parsed.result || "").trim();
-  if (!result) {
-    throw new Error("Claude returned an empty commit message.");
-  }
-
-  return result;
-}
-
-function buildSystemPrompt(
+export function buildSystemPrompt(
   commitLog: string,
   instructions?: string
 ): string {
@@ -172,7 +65,7 @@ function buildSystemPrompt(
   return parts.join("\n");
 }
 
-function buildUserPrompt(
+export function buildUserPrompt(
   diff: string,
   stat: string,
   files: string[]

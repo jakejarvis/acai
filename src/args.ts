@@ -1,17 +1,20 @@
 import { parseArgs, type ParseArgsOptionsConfig } from "node:util";
+import { providers } from "./provider";
 
 /**
  * Resolved configuration for the CLI.
  * Add new options here — they flow through the whole app.
  */
 export interface Config {
+  provider: string;
   model: string;
   help: boolean;
 }
 
-const DEFAULT_MODEL = "sonnet";
+const DEFAULT_PROVIDER = "claude";
 
 const options = {
+  provider: { type: "string" as const, short: "p" },
   model: { type: "string" as const, short: "m" },
   help: { type: "boolean" as const, short: "h" },
 } satisfies ParseArgsOptionsConfig;
@@ -24,23 +27,30 @@ export function parseConfig(): Config {
   });
 
   return {
-    model: (values.model as string | undefined) ?? process.env.ACAI_MODEL ?? DEFAULT_MODEL,
+    provider: (values.provider as string | undefined) ?? process.env.ACAI_PROVIDER ?? DEFAULT_PROVIDER,
+    model: (values.model as string | undefined) ?? process.env.ACAI_MODEL ?? "",
     help: (values.help as boolean | undefined) ?? false,
   };
 }
 
 export function printUsage(): void {
+  const providerNames = Object.keys(providers).join(", ");
+
   console.log(`
 Usage: acai [options]
 
 Options:
-  -m, --model <model>  Claude model to use (default: ${DEFAULT_MODEL})
-                        Can also set ACAI_MODEL env var
-  -h, --help           Show this help message
+  -p, --provider <name>  AI provider to use (${providerNames}) (default: ${DEFAULT_PROVIDER})
+                          Can also set ACAI_PROVIDER env var
+  -m, --model <model>    Model to use (default: provider-specific)
+                          Can also set ACAI_MODEL env var
+  -h, --help             Show this help message
 
 Examples:
-  acai                  # use default model (${DEFAULT_MODEL})
-  acai --model haiku    # use haiku for speed
-  acai -m opus          # use opus for max quality
+  acai                          # use Claude with default model
+  acai -p codex                 # use OpenAI Codex CLI
+  acai -p codex -m o4-mini      # use Codex with specific model
+  acai --model haiku             # use Claude with haiku for speed
+  acai -m opus                   # use Claude with opus for max quality
 `.trimStart());
 }

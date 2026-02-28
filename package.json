@@ -8,17 +8,18 @@
     "acai": "./dist/cli.mjs"
   },
   "scripts": {
-    "build": "tsdown bin/cli.ts --minify"
+    "build": "tsdown"
   },
   "files": [
     "dist/",
     "README.md",
     "LICENSE"
   ],
-  "dependencies": {
-    "@clack/prompts": "1.0.1"
+  "engines": {
+    "node": ">=18"
   },
   "devDependencies": {
+    "@clack/prompts": "1.0.1",
     "@types/node": "^25.3.2",
     "tsdown": "^0.20.3",
     "typescript": "^5.9.3"
