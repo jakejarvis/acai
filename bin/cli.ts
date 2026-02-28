@@ -102,7 +102,10 @@ async function main() {
 
   const stat = (await getStagedStat()) || "";
   const files = await getStagedFiles();
-  p.log.info(`${files.length} file${files.length === 1 ? "" : "s"} staged`);
+  const MAX_LISTED = 5;
+  const listed = files.slice(0, MAX_LISTED).join(", ");
+  const extra = files.length > MAX_LISTED ? ` and ${files.length - MAX_LISTED} more` : "";
+  p.log.info(`Staged: ${listed}${extra}`);
 
   // ── Gather repo style context ──────────────────────────────────────
   const commitLog = (await getRecentCommitLog(10)) || "";
@@ -111,7 +114,7 @@ async function main() {
   let instructions: string | undefined;
 
   while (true) {
-    s.start("Generating commit message");
+    s.start(`Generating with ${provider.name} (${model})`);
 
     let message: string;
     try {
@@ -129,7 +132,7 @@ async function main() {
       process.exit(1);
     }
 
-    s.stop("Done");
+    s.stop("Generated");
 
     // Display the message
     p.log.message(formatMessageForDisplay(message));
@@ -230,7 +233,6 @@ async function doCommit(message: string) {
   try {
     await commit(message);
     s.stop("Committed!");
-    p.outro("Done.");
   } catch (e: any) {
     s.stop("Failed");
     p.cancel(`Commit failed: ${e.message}`);
