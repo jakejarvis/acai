@@ -1,8 +1,11 @@
 # acai
 
-AI-generated commit messages that **match your repo's existing style** — powered by [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or [OpenAI Codex](https://github.com/openai/codex).
+AI-generated commit messages that match your repo's existing style. Powered by [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or [Codex](https://github.com/openai/codex).
 
-Unlike other AI commit tools that impose a fixed format, `acai` reads your repo's recent commit history and tells the AI to match whatever conventions your team already uses — conventional commits, gitmoji, ticket prefixes, freeform, whatever.
+`acai` reads your repo's recent commit history and adapts to whatever conventions your team already uses — conventional commits, gitmoji, ticket prefixes, pig latin, etc.
+
+> [!NOTE]
+> I vibed this up in a day based on my own needs and desires, but am more than willing to accept feedback and PRs!
 
 ## How it works
 
@@ -13,13 +16,20 @@ Unlike other AI commit tools that impose a fixed format, `acai` reads your repo'
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org) or [Bun](https://bun.sh) runtime
-- At least one AI CLI installed and authenticated:
+- [Node.js](https://nodejs.org) runtime
+- At least one of the following CLIs installed and signed in:
 
-| Provider | Install | Auth |
-|----------|---------|------|
-| [Claude Code](https://www.npmjs.com/package/@anthropic-ai/claude-code) (default) | `npm i -g @anthropic-ai/claude-code` | `claude login` |
-| [Codex](https://github.com/openai/codex) | `npm i -g @openai/codex` | Set `OPENAI_API_KEY` |
+| Provider | Install |
+|----------|---------|
+| [Claude Code](https://code.claude.com/docs/en/overview) (default) | `curl -fsSL https://claude.ai/install.sh \| bash` |
+| [Codex](https://github.com/openai/codex) | `npm i -g @openai/codex` |
+
+## Options
+
+| Flag | Env var | Default | Description |
+|------|---------|---------|-------------|
+| `-p, --provider` | `ACAI_PROVIDER` | `claude` | AI provider (`claude`, `codex`) |
+| `-m, --model` | `ACAI_MODEL` | provider default | Model override (`sonnet`, `gpt-5.3-codex`, etc.) |
 
 ## Usage
 
@@ -82,7 +92,7 @@ You can revise as many times as you like before committing.
 
 If nothing is staged, the tool will offer to `git add -A` for you.
 
-## How style detection works
+### How style detection works
 
 There's no manual configuration or pattern matching. The tool passes your recent commit log directly to the AI and asks it to infer the conventions. It picks up on:
 
@@ -94,16 +104,6 @@ There's no manual configuration or pattern matching. The tool passes your recent
 - **Detail level** — terse one-liners vs detailed descriptions
 
 New repo with no history? It defaults to clean, concise conventional commits.
-
-## Options
-
-| Flag | Env var | Default | Description |
-|------|---------|---------|-------------|
-| `-p, --provider` | `ACAI_PROVIDER` | `claude` | AI provider (`claude`, `codex`) |
-| `-m, --model` | `ACAI_MODEL` | provider default | Model override |
-| `-h, --help` | | | Show help |
-
-If you want to influence the output without changing your repo's style, use the **Revise** option interactively.
 
 ## License
 
