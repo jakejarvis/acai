@@ -9,7 +9,7 @@ import { spawn } from "node:child_process";
  */
 async function run(
   cmd: string[],
-  opts?: { cwd?: string }
+  opts?: { cwd?: string; raw?: boolean }
 ): Promise<string | null> {
   const [bin, ...args] = cmd;
   return new Promise((resolve) => {
@@ -23,7 +23,7 @@ async function run(
     });
     proc.on("error", () => resolve(null));
     proc.on("close", (code) => {
-      resolve(code === 0 ? stdout.trim() : null);
+      resolve(code === 0 ? (opts?.raw ? stdout : stdout.trim()) : null);
     });
   });
 }
@@ -78,7 +78,7 @@ export interface UnstagedFile {
  * Parses the index (XY) columns of `git status --porcelain`.
  */
 export async function getUnstagedFiles(): Promise<UnstagedFile[]> {
-  const raw = await run(["git", "status", "--porcelain", "-z"]);
+  const raw = await run(["git", "status", "--porcelain", "-z"], { raw: true });
   if (!raw) return [];
 
   const files: UnstagedFile[] = [];
@@ -143,14 +143,7 @@ export async function commit(message: string): Promise<void> {
   writeFileSync(tmpPath, message, "utf-8");
 
   try {
-    const code = await new Promise<number | null>((resolve, reject) => {
-      const proc = spawn("git", ["commit", "-F", tmpPath], {
-        stdio: "inherit",
-      });
-      proc.on("error", reject);
-      proc.on("close", resolve);
-    });
-    if (code !== 0) throw new Error("git commit failed");
+    await runOrThrow(["git", "commit", "-F", tmpPath]);
   } finally {
     try {
       rmSync(tmpDir, { recursive: true });
