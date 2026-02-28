@@ -30,6 +30,7 @@ AI-generated commit messages that match your repo's existing style. Powered by [
 |------|---------|---------|-------------|
 | `-p, --provider` | `ACAI_PROVIDER` | `claude` | AI provider (`claude`, `codex`) |
 | `-m, --model` | `ACAI_MODEL` | provider default | Model override (`sonnet`, `gpt-5.3-codex`, etc.) |
+| `-y, --yolo` | — | `false` | Stage all changes and commit without confirmation |
 
 ## Usage
 
@@ -49,6 +50,9 @@ acai -p codex
 # Override the model
 acai -m haiku
 acai -p codex -m o4-mini
+
+# Stage everything, generate, and commit — no prompts
+acai --yolo
 ```
 
 ### The flow
@@ -66,7 +70,6 @@ acai -p codex -m o4-mini
 │  ✓ Commit          — accept and commit
 │  ✎ Edit            — open in $EDITOR before committing
 │  ↻ Revise          — give Claude feedback and regenerate
-│  ⟳ Regenerate      — try again from scratch
 │  ⎘ Copy            — copy to clipboard, don't commit
 │  ✕ Cancel
 │
@@ -87,6 +90,10 @@ Choose **Revise** and tell Claude what to change:
 ```
 
 You can revise as many times as you like before committing.
+
+### YOLO mode
+
+Just want to commit and move on? `acai --yolo` stages all changes, generates a message, and commits — zero interaction required.
 
 ### No staged changes?
 

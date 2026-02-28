@@ -52,23 +52,27 @@ async function main() {
       process.exit(0);
     }
 
-    const shouldStage = await p.confirm({
-      message: "Stage all changes?",
-      initialValue: true,
-    });
-
-    if (p.isCancel(shouldStage)) {
-      p.cancel("Aborted.");
-      process.exit(0);
-    }
-
-    if (shouldStage) {
+    if (config.yolo) {
       await stageAll();
     } else {
-      const picked = await promptFilePicker(unstaged, "Select files to stage");
-      if (!picked) {
-        p.cancel("Nothing staged.");
+      const shouldStage = await p.confirm({
+        message: "Stage all changes?",
+        initialValue: true,
+      });
+
+      if (p.isCancel(shouldStage)) {
+        p.cancel("Aborted.");
         process.exit(0);
+      }
+
+      if (shouldStage) {
+        await stageAll();
+      } else {
+        const picked = await promptFilePicker(unstaged, "Select files to stage");
+        if (!picked) {
+          p.cancel("Nothing staged.");
+          process.exit(0);
+        }
       }
     }
 
@@ -81,23 +85,25 @@ async function main() {
   }
 
   // ── Offer to stage additional unstaged files ────────────────────────
-  const remaining = await getUnstagedFiles();
-  if (remaining.length > 0) {
-    const addMore = await p.confirm({
-      message: `${remaining.length} other changed file${remaining.length === 1 ? "" : "s"} not staged. Add more?`,
-      initialValue: false,
-    });
+  if (!config.yolo) {
+    const remaining = await getUnstagedFiles();
+    if (remaining.length > 0) {
+      const addMore = await p.confirm({
+        message: `${remaining.length} other changed file${remaining.length === 1 ? "" : "s"} not staged. Add more?`,
+        initialValue: false,
+      });
 
-    if (p.isCancel(addMore)) {
-      p.cancel("Aborted.");
-      process.exit(0);
-    }
+      if (p.isCancel(addMore)) {
+        p.cancel("Aborted.");
+        process.exit(0);
+      }
 
-    if (addMore) {
-      await promptFilePicker(remaining, "Select additional files to stage");
+      if (addMore) {
+        await promptFilePicker(remaining, "Select additional files to stage");
 
-      // Re-fetch diff since staging changed
-      diff = (await getStagedDiff())!;
+        // Re-fetch diff since staging changed
+        diff = (await getStagedDiff())!;
+      }
     }
   }
 
@@ -137,6 +143,11 @@ async function main() {
 
     // Display the message
     p.log.message(formatMessageForDisplay(message));
+
+    if (config.yolo) {
+      await doCommit(message);
+      break;
+    }
 
     const action = await p.select({
       message: "What should we do?",
