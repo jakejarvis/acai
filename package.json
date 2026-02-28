@@ -12,10 +12,14 @@
   },
   "files": [
     "dist/",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
+  "dependencies": {
+    "@clack/prompts": "1.0.1"
+  },
   "devDependencies": {
-    "@types/node": "^25.3.0",
+    "@types/node": "^25.3.2",
     "tsdown": "^0.20.3",
     "typescript": "^5.9.3"
   },
@@ -25,8 +29,5 @@
     "ai",
     "claude",
     "llm"
-  ],
-  "dependencies": {
-    "@clack/prompts": "^1.0.1"
-  }
+  ]
 }
