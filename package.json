@@ -1,6 +1,6 @@
 {
   "name": "@jakejarvis/acai",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "Yet another AI commit message generator",
   "repository": {
