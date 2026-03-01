@@ -113,6 +113,7 @@ interface GenerateOpts {
   commitLog: string;
   model: string;
   instructions?: string;
+  log?: (message: string) => void;
 }
 
 /**
@@ -122,10 +123,13 @@ export async function generateCommitMessage(
   provider: Provider,
   opts: GenerateOpts,
 ): Promise<string> {
-  const { diff, stat, files, commitLog, model, instructions } = opts;
+  const { diff, stat, files, commitLog, model, instructions, log } = opts;
 
   const systemPrompt = buildSystemPrompt(commitLog, instructions);
   const userPrompt = buildUserPrompt(diff, stat, files);
+
+  log?.(`System prompt:\n${systemPrompt}`);
+  log?.(`User prompt:\n${userPrompt}`);
 
   const args = provider.buildArgs({ userPrompt, systemPrompt, model });
 
@@ -133,6 +137,8 @@ export async function generateCommitMessage(
     timeout: 120_000,
     nodeOptions: { stdio: ["ignore", "pipe", "pipe"] },
   });
+
+  log?.(`Raw response:\n${stdout}${stderr ? `\nStderr:\n${stderr}` : ""}`);
 
   if (exitCode !== 0) {
     throw new Error(

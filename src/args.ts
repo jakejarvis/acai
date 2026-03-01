@@ -9,6 +9,7 @@ export interface Config {
   provider: string;
   model: string;
   yolo: boolean;
+  verbose: boolean;
   help: boolean;
 }
 
@@ -18,6 +19,7 @@ const options = {
   provider: { type: "string" as const, short: "p" },
   model: { type: "string" as const, short: "m" },
   yolo: { type: "boolean" as const, short: "y" },
+  verbose: { type: "boolean" as const, short: "v" },
   help: { type: "boolean" as const, short: "h" },
 } satisfies ParseArgsOptionsConfig;
 
@@ -35,6 +37,7 @@ export function parseConfig(): Config {
       DEFAULT_PROVIDER,
     model: (values.model as string | undefined) ?? process.env.ACAI_MODEL ?? "",
     yolo: (values.yolo as boolean | undefined) ?? false,
+    verbose: (values.verbose as boolean | undefined) ?? false,
     help: (values.help as boolean | undefined) ?? false,
   };
 }
@@ -52,6 +55,7 @@ Options:
   -m, --model <model>    Model to use (default: provider-specific)
                           Can also set ACAI_MODEL env var
   -y, --yolo             Stage all changes and commit without confirmation
+  -v, --verbose          Print prompts sent to the provider and raw responses
   -h, --help             Show this help message
 
 Examples:

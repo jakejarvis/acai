@@ -156,6 +156,7 @@ async function main() {
         commitLog,
         model,
         instructions,
+        log: config.verbose ? (msg) => p.log.message(pc.dim(msg)) : undefined,
       });
     } catch (e: unknown) {
       s.stop("Failed");
