@@ -33,12 +33,12 @@
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.4",
-    "@clack/prompts": "1.0.1",
-    "@types/node": "^25.3.2",
+    "@biomejs/biome": "2.4.7",
+    "@clack/prompts": "1.1.0",
+    "@types/node": "^25.5.0",
     "picocolors": "1.1.1",
-    "tinyexec": "1.0.2",
-    "tsdown": "^0.20.3",
+    "tinyexec": "1.0.4",
+    "tsdown": "^0.21.2",
     "typescript": "^5.9.3"
   },
   "engines": {
