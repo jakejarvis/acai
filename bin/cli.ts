@@ -15,14 +15,17 @@ import {
   stageFiles,
   type UnstagedFile,
 } from "../src/git";
-import {
-  ensureProvider,
-  generateCommitMessage,
-  providers,
-} from "../src/providers";
+import { ensureProvider, providers } from "../src/providers";
 
 async function main() {
   const config = parseConfig();
+
+  if (config.version) {
+    const { createRequire } = await import("node:module");
+    const pkg = createRequire(import.meta.url)("../package.json");
+    console.log(pkg.version);
+    process.exit(0);
+  }
 
   if (config.help) {
     printUsage();
@@ -43,8 +46,6 @@ async function main() {
   p.intro("acai");
 
   // ── Preflight checks ──────────────────────────────────────────────
-  const s = p.spinner();
-
   try {
     await ensureGitRepo();
   } catch {
@@ -145,11 +146,16 @@ async function main() {
   let instructions: string | undefined;
 
   while (true) {
+    let message: string;
+    let firstToken = true;
+    const BAR = pc.gray("\u2502");
+    const s = p.spinner();
     s.start(`Waiting for ${provider.name}`);
 
-    let message: string;
     try {
-      message = await generateCommitMessage(provider, {
+      let fullText = "";
+      let inBody = false;
+      const generator = provider.generate({
         diff,
         stat,
         files,
@@ -158,18 +164,50 @@ async function main() {
         instructions,
         log: config.verbose ? (msg) => p.log.message(pc.dim(msg)) : undefined,
       });
+
+      for await (const token of generator) {
+        if (firstToken) {
+          s.stop(
+            `Here's what ${provider.name} ${pc.dim(`(${model})`)} came up with:\n`,
+          );
+          process.stderr.write(`${BAR}  `);
+          firstToken = false;
+        }
+        fullText += token;
+
+        // Format: subject in bold green, body in dim, newlines get bar prefix
+        const parts = token.split("\n");
+        for (let i = 0; i < parts.length; i++) {
+          if (i > 0) {
+            inBody = true;
+            process.stderr.write(`\n${BAR}  `);
+          }
+          if (parts[i]) {
+            process.stderr.write(
+              inBody ? pc.dim(parts[i]) : pc.bold(pc.green(parts[i])),
+            );
+          }
+        }
+      }
+      process.stderr.write(`\n${BAR}\n`);
+
+      if (firstToken) {
+        s.stop("No response");
+      }
+
+      message = fullText.trim();
     } catch (e: unknown) {
-      s.stop("Failed");
+      if (firstToken) {
+        s.stop("Failed");
+      }
       p.cancel(`Generation failed: ${(e as Error).message}`);
       process.exit(1);
     }
 
-    s.stop(
-      `Here's what ${provider.name} ${pc.dim(`(${model})`)} came up with:`,
-    );
-
-    // Display the message
-    p.log.message(formatMessageForDisplay(message));
+    if (!message) {
+      p.cancel("Provider returned an empty message.");
+      process.exit(1);
+    }
 
     if (config.yolo) {
       await doCommit(message);
@@ -177,7 +215,7 @@ async function main() {
     }
 
     const action = await p.select({
-      message: "What should we do?",
+      message: "What's next?",
       options: [
         { value: "commit", label: "✓ Commit" },
         {
@@ -283,18 +321,6 @@ async function doCommit(message: string) {
     p.cancel(`Commit failed: ${(e as Error).message}`);
     process.exit(1);
   }
-}
-
-function formatMessageForDisplay(message: string): string {
-  const lines = message.split("\n");
-  const subject = lines[0];
-  const body = lines.slice(1).join("\n").trim();
-
-  let display = pc.bold(pc.green(subject));
-  if (body) {
-    display += `\n${pc.dim(body)}`;
-  }
-  return display;
 }
 
 async function editInEditor(message: string): Promise<string | null> {

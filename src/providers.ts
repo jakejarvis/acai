@@ -1,3 +1,5 @@
+import { query } from "@anthropic-ai/claude-agent-sdk";
+import { Codex } from "@openai/codex-sdk";
 import { exec } from "tinyexec";
 import { buildSystemPrompt, buildUserPrompt } from "./prompts";
 
@@ -6,12 +8,17 @@ export interface Provider {
   bin: string;
   versionArgs: string[];
   defaultModel: string;
-  buildArgs(opts: {
-    userPrompt: string;
-    systemPrompt: string;
-    model: string;
-  }): string[];
-  parseOutput(stdout: string): string;
+  generate(opts: GenerateOpts): AsyncGenerator<string, void>;
+}
+
+export interface GenerateOpts {
+  diff: string;
+  stat: string;
+  files: string[];
+  commitLog: string;
+  model: string;
+  instructions?: string;
+  log?: (message: string) => void;
 }
 
 const claude: Provider = {
@@ -19,43 +26,81 @@ const claude: Provider = {
   bin: "claude",
   versionArgs: ["--version"],
   defaultModel: "sonnet",
-  buildArgs({ userPrompt, systemPrompt, model }) {
-    return [
-      "-p",
-      userPrompt,
-      "--output-format",
-      "json",
-      "--model",
-      model,
-      "--tools",
-      "",
-      "--strict-mcp-config",
-      "--no-session-persistence",
-      "--system-prompt",
-      systemPrompt,
-    ];
-  },
-  parseOutput(stdout) {
-    // biome-ignore lint/suspicious/noExplicitAny: response is JSON
-    let parsed: any;
+
+  async *generate(opts) {
+    const systemPrompt = buildSystemPrompt(opts.commitLog, opts.instructions);
+    const userPrompt = buildUserPrompt(opts.diff, opts.stat, opts.files);
+    opts.log?.(`System prompt:\n${systemPrompt}`);
+    opts.log?.(`User prompt:\n${userPrompt}`);
+
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => abortController.abort(), 120_000);
+
     try {
-      parsed = JSON.parse(stdout);
-    } catch {
-      throw new Error(
-        `Failed to parse Claude response as JSON. Raw output:\n${stdout.slice(0, 500)}`,
-      );
-    }
+      let fullText = "";
 
-    if (parsed.is_error) {
-      throw new Error(`Claude error: ${parsed.result}`);
-    }
+      for await (const message of query({
+        prompt: userPrompt,
+        options: {
+          systemPrompt,
+          model: opts.model,
+          tools: [],
+          permissionMode: "bypassPermissions",
+          allowDangerouslySkipPermissions: true,
+          persistSession: false,
+          includePartialMessages: true,
+          maxTurns: 1,
+          abortController,
+        },
+      })) {
+        // Token streaming via BetaRawMessageStreamEvent
+        if (message.type === "stream_event") {
+          const event = message.event;
+          if (
+            event.type === "content_block_delta" &&
+            event.delta.type === "text_delta"
+          ) {
+            fullText += event.delta.text;
+            yield event.delta.text;
+          }
+        }
 
-    const result = (parsed.result || "").trim();
-    if (!result) {
-      throw new Error("Claude returned an empty commit message.");
-    }
+        // Fallback: extract text from completed assistant message
+        if (message.type === "assistant" && !message.error) {
+          const content = message.message?.content;
+          if (Array.isArray(content)) {
+            for (const block of content) {
+              if ("text" in block && block.text && !fullText) {
+                fullText = block.text;
+                yield block.text;
+              }
+            }
+          }
+        }
 
-    return result;
+        // Error on result
+        if (message.type === "result" && message.is_error) {
+          throw new Error(
+            `Claude error: ${
+              message.subtype === "success"
+                ? message.result
+                : message.errors?.join(", ")
+            }`,
+          );
+        }
+
+        // Auth/rate-limit errors
+        if (message.type === "assistant" && message.error) {
+          throw new Error(`Claude ${message.error} error`);
+        }
+      }
+
+      if (!fullText.trim()) {
+        throw new Error("Claude returned an empty commit message.");
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
   },
 };
 
@@ -63,30 +108,54 @@ const codex: Provider = {
   name: "Codex",
   bin: "codex",
   versionArgs: ["--version"],
-  defaultModel: "gpt-5.1-codex-mini",
-  buildArgs({ userPrompt, systemPrompt, model }) {
-    return [
-      "exec",
-      userPrompt,
-      "--model",
-      model,
-      "-c",
-      `developer_instructions=${systemPrompt}`,
-      "-c",
-      "model_reasoning_effort=medium",
-      "-c",
-      "check_for_update_on_startup=false",
-      "--ephemeral",
-      "--sandbox",
-      "read-only",
-    ];
-  },
-  parseOutput(stdout) {
-    const result = stdout.trim();
-    if (!result) {
+  defaultModel: "gpt-5.4-mini",
+
+  async *generate(opts) {
+    const systemPrompt = buildSystemPrompt(opts.commitLog, opts.instructions);
+    const userPrompt = buildUserPrompt(opts.diff, opts.stat, opts.files);
+    opts.log?.(`System prompt:\n${systemPrompt}`);
+    opts.log?.(`User prompt:\n${userPrompt}`);
+
+    const client = new Codex({
+      config: {
+        developer_instructions: systemPrompt,
+        model_reasoning_effort: "medium",
+        check_for_update_on_startup: false,
+      },
+    });
+
+    const thread = client.startThread({
+      model: opts.model,
+      sandboxMode: "read-only",
+      skipGitRepoCheck: true,
+    });
+
+    const { events } = await thread.runStreamed(userPrompt);
+    let lastText = "";
+
+    for await (const event of events) {
+      opts.log?.(`Event: ${JSON.stringify(event).slice(0, 300)}`);
+
+      if (event.type === "turn.failed") {
+        throw new Error(`Codex error: ${event.error.message}`);
+      }
+
+      // AgentMessageItem.text grows with each update — yield only the delta
+      if (
+        (event.type === "item.updated" || event.type === "item.completed") &&
+        event.item.type === "agent_message"
+      ) {
+        const newText = event.item.text;
+        if (newText.length > lastText.length) {
+          yield newText.slice(lastText.length);
+          lastText = newText;
+        }
+      }
+    }
+
+    if (!lastText.trim()) {
       throw new Error("Codex returned an empty commit message.");
     }
-    return result;
   },
 };
 
@@ -104,47 +173,4 @@ export async function ensureProvider(provider: Provider): Promise<void> {
       `${provider.name} CLI ("${provider.bin}") not found. Make sure it is installed and on your PATH.`,
     );
   }
-}
-
-interface GenerateOpts {
-  diff: string;
-  stat: string;
-  files: string[];
-  commitLog: string;
-  model: string;
-  instructions?: string;
-  log?: (message: string) => void;
-}
-
-/**
- * Generate a commit message using the given provider's CLI.
- */
-export async function generateCommitMessage(
-  provider: Provider,
-  opts: GenerateOpts,
-): Promise<string> {
-  const { diff, stat, files, commitLog, model, instructions, log } = opts;
-
-  const systemPrompt = buildSystemPrompt(commitLog, instructions);
-  const userPrompt = buildUserPrompt(diff, stat, files);
-
-  log?.(`System prompt:\n${systemPrompt}`);
-  log?.(`User prompt:\n${userPrompt}`);
-
-  const args = provider.buildArgs({ userPrompt, systemPrompt, model });
-
-  const { stdout, stderr, exitCode } = await exec(provider.bin, args, {
-    timeout: 120_000,
-    nodeOptions: { stdio: ["ignore", "pipe", "pipe"] },
-  });
-
-  log?.(`Raw response:\n${stdout}${stderr ? `\nStderr:\n${stderr}` : ""}`);
-
-  if (exitCode !== 0) {
-    throw new Error(
-      `${provider.name} exited with code ${exitCode}\n${stderr || stdout}`,
-    );
-  }
-
-  return provider.parseOutput(stdout);
 }

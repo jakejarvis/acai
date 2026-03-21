@@ -1,6 +1,6 @@
 # acai
 
-AI-generated commit messages that match your repo's existing style. Powered by [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or [Codex](https://github.com/openai/codex).
+AI-generated commit messages that match your repo's existing style. Powered by [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or [Codex](https://github.com/openai/codex), with real-time streaming as the message is generated.
 
 `acai` reads your repo's recent commit history and adapts to whatever conventions your team already uses — conventional commits, gitmoji, ticket prefixes, pig latin, etc.
 
@@ -29,8 +29,11 @@ AI-generated commit messages that match your repo's existing style. Powered by [
 | Flag | Env var | Default | Description |
 |------|---------|---------|-------------|
 | `-p, --provider` | `ACAI_PROVIDER` | `claude` | AI provider (`claude`, `codex`) |
-| `-m, --model` | `ACAI_MODEL` | provider default | Model override (`sonnet`, `gpt-5.3-codex`, etc.) |
+| `--claude, --codex` | `ACAI_PROVIDER` | `claude` | Shorthand for `--provider <name>` |
+| `-m, --model` | `ACAI_MODEL` | `sonnet` or `gpt-5.4-mini` | Model override |
 | `-y, --yolo` | — | `false` | Stage all changes and commit without confirmation |
+| `-V, --verbose` | — | `false` | Print prompts sent to the provider and raw responses |
+| `-v, --version` | — | — | Show version number |
 
 ## Usage
 
@@ -45,11 +48,12 @@ npm install -g @jakejarvis/acai
 acai
 
 # Use a different provider
+acai --codex
 acai -p codex
 
 # Override the model
 acai -m haiku
-acai -p codex -m o4-mini
+acai --codex -m gpt-5.4-mini
 
 # Stage everything, generate, and commit — no prompts
 acai --yolo
@@ -62,14 +66,14 @@ acai --yolo
 │
 ◇  3 files staged
 │
-◆  Generating commit message…
+◇  Here's what Claude (sonnet) came up with:
 │
 │  feat(auth): add session expiry validation
 │
-◆  What do you want to do?
+◆  What's next?
 │  ✓ Commit          — accept and commit
 │  ✎ Edit            — open in $EDITOR before committing
-│  ↻ Revise          — give Claude feedback and regenerate
+│  ↻ Revise          — give feedback and regenerate
 │  ⎘ Copy            — copy to clipboard, don't commit
 │  ✕ Cancel
 │
@@ -78,13 +82,13 @@ acai --yolo
 
 ### Revision loop
 
-Choose **Revise** and tell Claude what to change:
+Choose **Revise** and tell the provider what to change:
 
 ```
 ◆  What should Claude change?
 │  make it shorter, drop the scope
 │
-◆  Generating commit message…
+◇  Here's what Claude (sonnet) came up with:
 │
 │  feat: add session expiry validation
 ```

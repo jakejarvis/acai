@@ -3,6 +3,30 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { exec } from "tinyexec";
 
+/**
+ * Files excluded from diffs sent to the AI provider.
+ * These are still listed as changed files — just their content is omitted
+ * to avoid wasting tokens on generated/binary/noisy content.
+ */
+const DIFF_EXCLUDE_PATTERNS = [
+  "package-lock.json",
+  "yarn.lock",
+  "pnpm-lock.yaml",
+  "bun.lock",
+  "bun.lockb",
+  "deno.lock",
+  "Cargo.lock",
+  "Gemfile.lock",
+  "composer.lock",
+  "poetry.lock",
+  "uv.lock",
+  "go.sum",
+  "flake.lock",
+  "*.pbxproj",
+  "*.xcworkspacedata",
+  "*.map",
+];
+
 export async function ensureGitRepo() {
   const { stdout, exitCode } = await exec("git", [
     "rev-parse",
@@ -14,15 +38,26 @@ export async function ensureGitRepo() {
 }
 
 export async function getStagedDiff(): Promise<string | null> {
-  const { stdout, exitCode } = await exec("git", ["diff", "--cached"]);
+  const excludes = DIFF_EXCLUDE_PATTERNS.map((p) => `:(exclude)${p}`);
+  const { stdout, exitCode } = await exec("git", [
+    "diff",
+    "--cached",
+    "--",
+    ".",
+    ...excludes,
+  ]);
   return exitCode === 0 ? stdout.trim() : null;
 }
 
 export async function getStagedStat(): Promise<string | null> {
+  const excludes = DIFF_EXCLUDE_PATTERNS.map((p) => `:(exclude)${p}`);
   const { stdout, exitCode } = await exec("git", [
     "diff",
     "--cached",
     "--stat",
+    "--",
+    ".",
+    ...excludes,
   ]);
   return exitCode === 0 ? stdout.trim() : null;
 }

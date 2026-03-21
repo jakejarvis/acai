@@ -3,5 +3,8 @@ import { defineConfig } from "tsdown";
 export default defineConfig({
   entry: ["bin/cli.ts"],
   nodeProtocol: "strip",
-  inlineOnly: false,
+  deps: {
+    onlyBundle: false,
+    neverBundle: ["@anthropic-ai/claude-agent-sdk", "@openai/codex-sdk"],
+  },
 });

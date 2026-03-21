@@ -10,6 +10,7 @@ export interface Config {
   model: string;
   yolo: boolean;
   verbose: boolean;
+  version: boolean;
   help: boolean;
 }
 
@@ -19,8 +20,12 @@ const options = {
   provider: { type: "string" as const, short: "p" },
   model: { type: "string" as const, short: "m" },
   yolo: { type: "boolean" as const, short: "y" },
-  verbose: { type: "boolean" as const, short: "v" },
+  verbose: { type: "boolean" as const, short: "V" },
+  version: { type: "boolean" as const, short: "v" },
   help: { type: "boolean" as const, short: "h" },
+  // Provider shorthand aliases (--claude, --codex)
+  claude: { type: "boolean" as const },
+  codex: { type: "boolean" as const },
 } satisfies ParseArgsOptionsConfig;
 
 export function parseConfig(): Config {
@@ -30,14 +35,23 @@ export function parseConfig(): Config {
     strict: false, // ignore unknown flags instead of throwing
   });
 
+  // --claude / --codex shorthand aliases for --provider
+  const providerAlias = values.codex
+    ? "codex"
+    : values.claude
+      ? "claude"
+      : undefined;
+
   return {
     provider:
       (values.provider as string | undefined) ??
+      providerAlias ??
       process.env.ACAI_PROVIDER ??
       DEFAULT_PROVIDER,
     model: (values.model as string | undefined) ?? process.env.ACAI_MODEL ?? "",
     yolo: (values.yolo as boolean | undefined) ?? false,
     verbose: (values.verbose as boolean | undefined) ?? false,
+    version: (values.version as boolean | undefined) ?? false,
     help: (values.help as boolean | undefined) ?? false,
   };
 }
@@ -51,11 +65,13 @@ Usage: acai [options]
 
 Options:
   -p, --provider <name>  AI provider to use (${providerNames}) (default: ${DEFAULT_PROVIDER})
+      --claude, --codex    Shorthand for --provider <name>
                           Can also set ACAI_PROVIDER env var
   -m, --model <model>    Model to use (default: provider-specific)
                           Can also set ACAI_MODEL env var
   -y, --yolo             Stage all changes and commit without confirmation
-  -v, --verbose          Print prompts sent to the provider and raw responses
+  -V, --verbose          Print prompts sent to the provider and raw responses
+  -v, --version          Show version number
   -h, --help             Show this help message
 
 Examples:
