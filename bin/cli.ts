@@ -15,6 +15,7 @@ import {
   stageFiles,
   type UnstagedFile,
 } from "../src/git";
+import { normalizeCommitMessage } from "../src/prompts";
 import { ensureProvider, providers } from "../src/providers";
 
 async function main() {
@@ -195,7 +196,7 @@ async function main() {
         s.stop("No response");
       }
 
-      message = fullText.trim();
+      message = normalizeCommitMessage(fullText.trim());
     } catch (e: unknown) {
       if (firstToken) {
         s.stop("Failed");

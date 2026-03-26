@@ -86,6 +86,31 @@ export function buildUserPrompt(
 }
 
 /**
+ * Normalize commit message formatting:
+ * 1. Split concatenated bullet points onto separate lines
+ * 2. Ensure a blank line between subject and body
+ */
+export function normalizeCommitMessage(message: string): string {
+  const lines = message.split("\n");
+
+  // If the first line contains 2+ bullet patterns (" - "), they're likely
+  // concatenated body bullets that lost their newlines.
+  const firstLine = lines[0];
+  const bulletHits = firstLine.match(/ - /g);
+  if (bulletHits && bulletHits.length >= 2) {
+    const parts = firstLine.split(/ (?=- )/);
+    lines.splice(0, 1, parts[0], "", ...parts.slice(1));
+  }
+
+  // Ensure blank line between subject and body
+  if (lines.length > 1 && lines[1].trim() !== "") {
+    lines.splice(1, 0, "");
+  }
+
+  return lines.join("\n");
+}
+
+/**
  * Truncate plain text to a character limit.
  */
 function truncate(text: string, maxChars: number): string {
