@@ -116,7 +116,7 @@ function truncate(text: string, maxChars: number): string {
  * Keeps whole hunks (starting with @@ or diff --git) until the budget
  * is exhausted, then appends a note about the omitted remainder.
  */
-function truncateDiff(diff: string, maxChars: number): string {
+export function truncateDiff(diff: string, maxChars: number): string {
   if (diff.length <= maxChars) return diff;
 
   // Split into hunks/file sections at "diff --git" boundaries
