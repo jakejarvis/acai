@@ -36,11 +36,7 @@ export function parseConfig(): Config {
   });
 
   // --claude / --codex shorthand aliases for --provider
-  const providerAlias = values.codex
-    ? "codex"
-    : values.claude
-      ? "claude"
-      : undefined;
+  const providerAlias = values.codex ? "codex" : values.claude ? "claude" : undefined;
 
   return {
     provider:

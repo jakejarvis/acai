@@ -36,9 +36,7 @@ async function main() {
   const provider = providers[config.provider];
   if (!provider) {
     const available = Object.keys(providers).join(", ");
-    console.error(
-      `Unknown provider "${config.provider}". Available: ${available}`,
-    );
+    console.error(`Unknown provider "${config.provider}". Available: ${available}`);
     process.exit(1);
   }
 
@@ -87,10 +85,7 @@ async function main() {
       if (shouldStage) {
         await stageAll();
       } else {
-        const picked = await promptFilePicker(
-          unstaged,
-          "Select files to stage",
-        );
+        const picked = await promptFilePicker(unstaged, "Select files to stage");
         if (!picked) {
           p.cancel("Nothing staged.");
           process.exit(0);
@@ -134,8 +129,7 @@ async function main() {
   const files = await getStagedFiles();
   const MAX_LISTED = 5;
   const listed = files.slice(0, MAX_LISTED).join(", ");
-  const extra =
-    files.length > MAX_LISTED ? ` and ${files.length - MAX_LISTED} more` : "";
+  const extra = files.length > MAX_LISTED ? ` and ${files.length - MAX_LISTED} more` : "";
   p.log.info(
     `Staged ${files.length} file${files.length === 1 ? "" : "s"}: ${pc.dim(listed + extra)}`,
   );
@@ -168,9 +162,7 @@ async function main() {
 
       for await (const token of generator) {
         if (firstToken) {
-          s.stop(
-            `Here's what ${provider.name} ${pc.dim(`(${model})`)} came up with:\n`,
-          );
+          s.stop(`Here's what ${provider.name} ${pc.dim(`(${model})`)} came up with:\n`);
           process.stderr.write(`${BAR}  `);
           firstToken = false;
         }
@@ -184,9 +176,7 @@ async function main() {
             process.stderr.write(`\n${BAR}  `);
           }
           if (parts[i]) {
-            process.stderr.write(
-              inBody ? pc.dim(parts[i]) : pc.bold(pc.green(parts[i])),
-            );
+            process.stderr.write(inBody ? pc.dim(parts[i]) : pc.bold(pc.green(parts[i])));
           }
         }
       }
@@ -268,8 +258,7 @@ async function main() {
     if (action === "revise") {
       const feedback = await p.text({
         message: `What should ${provider.name} change?`,
-        placeholder:
-          "e.g. make it shorter, mention the API refactor, use past tense…",
+        placeholder: "e.g. make it shorter, mention the API refactor, use past tense…",
       });
 
       if (p.isCancel(feedback) || !feedback) {
@@ -285,10 +274,7 @@ async function main() {
  * Show a grouped multi-select file picker and stage the selected files.
  * Returns true if files were staged, false if cancelled/empty.
  */
-async function promptFilePicker(
-  files: UnstagedFile[],
-  message: string,
-): Promise<boolean> {
+async function promptFilePicker(files: UnstagedFile[], message: string): Promise<boolean> {
   const STATUS_LABELS: Record<string, string> = {
     modified: "Modified",
     untracked: "Untracked",
@@ -326,9 +312,7 @@ async function doCommit(message: string) {
 
 async function editInEditor(message: string): Promise<string | null> {
   const { spawn } = await import("node:child_process");
-  const { writeFileSync, readFileSync, mkdtempSync, rmSync } = await import(
-    "node:fs"
-  );
+  const { writeFileSync, readFileSync, mkdtempSync, rmSync } = await import("node:fs");
   const { join } = await import("node:path");
   const { tmpdir } = await import("node:os");
   const editor = process.env.EDITOR || process.env.VISUAL || "vi";

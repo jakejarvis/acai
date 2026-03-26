@@ -56,10 +56,7 @@ const claude: Provider = {
         // Token streaming via BetaRawMessageStreamEvent
         if (message.type === "stream_event") {
           const event = message.event;
-          if (
-            event.type === "content_block_delta" &&
-            event.delta.type === "text_delta"
-          ) {
+          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
             fullText += event.delta.text;
             yield event.delta.text;
           }
@@ -82,9 +79,7 @@ const claude: Provider = {
         if (message.type === "result" && message.is_error) {
           throw new Error(
             `Claude error: ${
-              message.subtype === "success"
-                ? message.result
-                : message.errors?.join(", ")
+              message.subtype === "success" ? message.result : message.errors?.join(", ")
             }`,
           );
         }

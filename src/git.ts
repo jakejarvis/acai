@@ -28,10 +28,7 @@ const DIFF_EXCLUDE_PATTERNS = [
 ];
 
 export async function ensureGitRepo() {
-  const { stdout, exitCode } = await exec("git", [
-    "rev-parse",
-    "--is-inside-work-tree",
-  ]);
+  const { stdout, exitCode } = await exec("git", ["rev-parse", "--is-inside-work-tree"]);
   if (exitCode !== 0 || stdout.trim() !== "true") {
     throw new Error("Not inside a git repository.");
   }
@@ -39,13 +36,7 @@ export async function ensureGitRepo() {
 
 export async function getStagedDiff(): Promise<string | null> {
   const excludes = DIFF_EXCLUDE_PATTERNS.map((p) => `:(exclude)${p}`);
-  const { stdout, exitCode } = await exec("git", [
-    "diff",
-    "--cached",
-    "--",
-    ".",
-    ...excludes,
-  ]);
+  const { stdout, exitCode } = await exec("git", ["diff", "--cached", "--", ".", ...excludes]);
   return exitCode === 0 ? stdout.trim() : null;
 }
 
@@ -63,11 +54,7 @@ export async function getStagedStat(): Promise<string | null> {
 }
 
 export async function getStagedFiles(): Promise<string[]> {
-  const { stdout, exitCode } = await exec("git", [
-    "diff",
-    "--cached",
-    "--name-only",
-  ]);
+  const { stdout, exitCode } = await exec("git", ["diff", "--cached", "--name-only"]);
   if (exitCode !== 0 || !stdout.trim()) return [];
   return stdout.trim().split("\n").filter(Boolean);
 }
@@ -87,11 +74,7 @@ export interface UnstagedFile {
  * Parses the index (XY) columns of `git status --porcelain`.
  */
 export async function getUnstagedFiles(): Promise<UnstagedFile[]> {
-  const { stdout, exitCode } = await exec("git", [
-    "status",
-    "--porcelain",
-    "-z",
-  ]);
+  const { stdout, exitCode } = await exec("git", ["status", "--porcelain", "-z"]);
   if (exitCode !== 0 || !stdout) return [];
 
   const files: UnstagedFile[] = [];

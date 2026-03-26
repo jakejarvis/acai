@@ -19,21 +19,21 @@ AI-generated commit messages that match your repo's existing style. Powered by [
 - [Node.js](https://nodejs.org) runtime
 - At least one of the following CLIs installed and signed in:
 
-| Provider | Install |
-|----------|---------|
+| Provider                                                          | Install                                           |
+| ----------------------------------------------------------------- | ------------------------------------------------- |
 | [Claude Code](https://code.claude.com/docs/en/overview) (default) | `curl -fsSL https://claude.ai/install.sh \| bash` |
-| [Codex](https://github.com/openai/codex) | `npm i -g @openai/codex` |
+| [Codex](https://github.com/openai/codex)                          | `npm i -g @openai/codex`                          |
 
 ## Options
 
-| Flag | Env var | Default | Description |
-|------|---------|---------|-------------|
-| `-p, --provider` | `ACAI_PROVIDER` | `claude` | AI provider (`claude`, `codex`) |
-| `--claude, --codex` | `ACAI_PROVIDER` | `claude` | Shorthand for `--provider <name>` |
-| `-m, --model` | `ACAI_MODEL` | `sonnet` or `gpt-5.4-mini` | Model override |
-| `-y, --yolo` | — | `false` | Stage all changes and commit without confirmation |
-| `-V, --verbose` | — | `false` | Print prompts sent to the provider and raw responses |
-| `-v, --version` | — | — | Show version number |
+| Flag                | Env var         | Default                    | Description                                          |
+| ------------------- | --------------- | -------------------------- | ---------------------------------------------------- |
+| `-p, --provider`    | `ACAI_PROVIDER` | `claude`                   | AI provider (`claude`, `codex`)                      |
+| `--claude, --codex` | `ACAI_PROVIDER` | `claude`                   | Shorthand for `--provider <name>`                    |
+| `-m, --model`       | `ACAI_MODEL`    | `sonnet` or `gpt-5.4-mini` | Model override                                       |
+| `-y, --yolo`        | —               | `false`                    | Stage all changes and commit without confirmation    |
+| `-V, --verbose`     | —               | `false`                    | Print prompts sent to the provider and raw responses |
+| `-v, --version`     | —               | —                          | Show version number                                  |
 
 ## Usage
 

@@ -6,12 +6,13 @@ This file provides guidance to agents when working with code in this repository.
 
 ```bash
 npm run build        # bundles bin/cli.ts → dist/cli.mjs via tsdown with minification
-npm run lint         # biome check
-npm run format       # biome format --write
+npm run lint         # oxlint
+npm run lint:fix     # oxlint --fix
+npm run fmt          # oxfmt
+npm run fmt:check    # oxfmt --check
 npm run check-types  # tsc --noEmit
+npm test             # vitest run
 ```
-
-No test suite is configured.
 
 ## Architecture
 

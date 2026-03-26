@@ -1,59 +1,64 @@
 {
   "name": "@jakejarvis/acai",
   "version": "0.3.0",
-  "license": "MIT",
   "description": "Yet another AI commit message generator",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/jakejarvis/acai.git"
-  },
+  "keywords": [
+    "ai",
+    "claude",
+    "codex",
+    "commit",
+    "git"
+  ],
   "bugs": {
     "url": "https://github.com/jakejarvis/acai/issues"
   },
+  "license": "MIT",
   "author": {
     "name": "Jake Jarvis",
     "email": "jake@jarv.is",
     "url": "https://jarv.is"
   },
-  "publishConfig": {
-    "access": "public"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jakejarvis/acai.git"
   },
-  "type": "module",
   "bin": {
     "acai": "dist/cli.mjs"
   },
   "files": [
     "dist"
   ],
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsdown",
-    "lint": "biome check",
-    "format": "biome format --write",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
     "check-types": "tsc --noEmit",
+    "test": "vitest run",
     "prepack": "npm run build"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.81",
+    "@anthropic-ai/claude-agent-sdk": "^0.2.84",
     "@openai/codex-sdk": "^0.116.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.8",
     "@clack/prompts": "1.1.0",
     "@types/node": "^25.5.0",
+    "oxfmt": "^0.42.0",
+    "oxlint": "^1.57.0",
     "picocolors": "1.1.1",
     "tinyexec": "1.0.4",
-    "tsdown": "0.21.4",
-    "typescript": "^5.9.3"
+    "tsdown": "0.21.5",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
   },
   "engines": {
     "node": ">=18.19"
-  },
-  "keywords": [
-    "git",
-    "commit",
-    "ai",
-    "claude",
-    "codex"
-  ]
+  }
 }

@@ -2,10 +2,7 @@
  * Shared prompt-building logic for all providers.
  */
 
-export function buildSystemPrompt(
-  commitLog: string,
-  instructions?: string,
-): string {
+export function buildSystemPrompt(commitLog: string, instructions?: string): string {
   const truncatedLog = truncate(commitLog, 10_000);
   const hasHistory = Boolean(commitLog.trim());
 
@@ -64,11 +61,7 @@ export function buildSystemPrompt(
   return parts.join("\n");
 }
 
-export function buildUserPrompt(
-  diff: string,
-  stat: string,
-  files: string[],
-): string {
+export function buildUserPrompt(diff: string, stat: string, files: string[]): string {
   const truncatedDiff = truncateDiff(diff, 15_000);
 
   return [
@@ -144,8 +137,7 @@ function truncateDiff(diff: string, maxChars: number): string {
   }
 
   if (result.length < diff.length) {
-    result +=
-      "\n\n[... diff truncated — stat summary above covers all files ...]";
+    result += "\n\n[... diff truncated — stat summary above covers all files ...]";
   }
 
   return result;
