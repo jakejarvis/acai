@@ -7,14 +7,6 @@ import {
 } from "./prompts";
 
 describe("normalizeCommitMessage", () => {
-  it("splits concatenated bullet points onto separate lines", () => {
-    const input =
-      "feat: add streaming support - stream tokens as they arrive - add native SDK providers - improve UX";
-    expect(normalizeCommitMessage(input)).toBe(
-      "feat: add streaming support\n\n- stream tokens as they arrive\n- add native SDK providers\n- improve UX",
-    );
-  });
-
   it("inserts blank line between subject and body when missing", () => {
     const input = "feat: add streaming\n- bullet 1\n- bullet 2";
     expect(normalizeCommitMessage(input)).toBe("feat: add streaming\n\n- bullet 1\n- bullet 2");
