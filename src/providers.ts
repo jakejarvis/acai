@@ -45,6 +45,14 @@ const claude: Provider = {
           systemPrompt,
           model: opts.model,
           tools: [],
+          /** Skip ~/.claude and project settings that could enable MCP from disk. */
+          settingSources: [],
+          /** Empty allowlist disables all MCP servers (per Claude Code settings semantics). */
+          settings: {
+            allowedMcpServers: [],
+            enableAllProjectMcpServers: false,
+          },
+          mcpServers: {},
           permissionMode: "bypassPermissions",
           allowDangerouslySkipPermissions: true,
           persistSession: false,
@@ -116,6 +124,8 @@ const codex: Provider = {
         developer_instructions: systemPrompt,
         model_reasoning_effort: "medium",
         check_for_update_on_startup: false,
+        /** Empty table: no servers in the allowlist, so configured MCP servers are disabled. */
+        mcp_servers: {},
       },
     });
 
