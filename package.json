@@ -1,6 +1,6 @@
 {
   "name": "@jakejarvis/acai",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Yet another AI commit message generator",
   "keywords": [
     "ai",
